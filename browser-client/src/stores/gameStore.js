@@ -72,6 +72,19 @@ export const useGameStore = defineStore('game', () => {
     turnSubmitted.value = false
   }
 
+  const reset = () => {
+    gameId.value = null
+    phase.value = 'lobby'
+    turnNumber.value = 0
+    players.value = []
+    robots.value = []
+    availableCards.value = []
+    selectedCards.value = []
+    turnSubmitted.value = false
+    playerStatuses.value = {}
+    turnOrder.value = []
+  }
+
   const setTurnSubmitted = (val) => {
     turnSubmitted.value = val
   }
@@ -122,6 +135,7 @@ export const useGameStore = defineStore('game', () => {
     selectCard,
     clearSelectedCards,
     resetRoundState,
+    reset,
     isCardSelected,
     canSubmitTurn,
   }

@@ -36,8 +36,8 @@ const gameStore = useGameStore()
 const playerStore = usePlayerStore()
 
 const returnToLobby = () => {
-  gameStore.$reset()
-  playerStore.$reset()
+  gameStore.reset()
+  playerStore.reset()
   websocket.disconnect()
 }
 </script>
