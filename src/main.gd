@@ -9,6 +9,7 @@ var turn_manager: TurnManager
 var status_panel: ServerStatusPanel
 var game_board: GameBoard3D
 var lobby_panel: LobbyPanel
+var player_status_hud: PlayerStatusHUD
 
 func _ready() -> void:
 	print("Initializing Droid-Clash Server...")
@@ -44,6 +45,11 @@ func _ready() -> void:
 	lobby_panel = LobbyPanel.new()
 	add_child(lobby_panel)
 	lobby_panel.setup(game_manager)
+
+	# Player status HUD (top-right, visible during gameplay)
+	player_status_hud = PlayerStatusHUD.new()
+	add_child(player_status_hud)
+	player_status_hud.setup(game_manager, turn_manager)
 
 	print("Server initialized and ready for connections")
 

@@ -7,6 +7,7 @@ signal game_ended
 signal player_joined(player_id: int, player_name: String)
 signal player_left(player_id: int)
 signal player_ready(player_id: int)
+signal player_submitted(player_id: int)
 signal turn_changed(turn_number: int)
 signal round_starting
 
@@ -112,6 +113,7 @@ func submit_turn(player_id: int, instance_ids: Array) -> bool:
 
 	players[player_id]["submitted"] = true
 	players[player_id]["submitted_instance_ids"] = instance_ids
+	player_submitted.emit(player_id)
 
 	# Forward card selection to TurnManager
 	if turn_manager:
