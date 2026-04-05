@@ -42,19 +42,26 @@
         <h1 class="text-3xl font-bold text-center mb-2" :style="{ color: playerStore.playerColor }">Select Your Cards</h1>
         <p class="text-center text-gray-600 mb-6">Choose 3 cards for this turn ({{ gameStore.selectedCards.length }}/3)</p>
 
-        <div class="grid grid-cols-2 gap-4 mb-8">
+        <div class="grid grid-cols-3 gap-3 mb-8">
           <button
             v-for="card in gameStore.availableCards"
             :key="card.id"
             @click="gameStore.selectCard(card.id)"
-            class="p-4 rounded-lg font-semibold text-lg transition border-2"
+            class="p-3 rounded-lg font-semibold transition border-2"
             :style="gameStore.isCardSelected(card.id)
               ? { borderColor: playerStore.playerColor, backgroundColor: playerStore.playerColor + '22', color: '#1a1a2e' }
               : {}"
             :class="gameStore.isCardSelected(card.id) ? '' : 'border-gray-300 bg-gray-50 text-gray-800 hover:border-gray-400 hover:bg-gray-100'"
           >
-            <div class="text-3xl mb-2">{{ card.icon }}</div>
-            <div>{{ card.name }}</div>
+            <div class="text-3xl mb-1">{{ card.icon }}</div>
+            <div class="text-sm">{{ card.name }}</div>
+            <div
+              v-if="gameStore.isCardSelected(card.id)"
+              class="mt-1 text-xs font-bold"
+              :style="{ color: playerStore.playerColor }"
+            >
+              #{{ gameStore.selectedCards.findIndex(c => c.id === card.id) + 1 }}
+            </div>
           </button>
         </div>
 

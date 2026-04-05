@@ -131,6 +131,9 @@ class WebSocketClient {
       case "game_start":
         this.handleGameStart(data);
         break;
+      case "hand_update":
+        this.handleHandUpdate(data);
+        break;
       case "game_state_update":
         this.handleGameStateUpdate(data);
         break;
@@ -158,12 +161,16 @@ class WebSocketClient {
       gameId: data.gameId,
       phase: "card_selection",
       turnNumber: data.turnNumber,
-      boardWidth: data.boardWidth,
-      boardHeight: data.boardHeight,
+      boardRadius: data.boardRadius,
       players: data.robots.map((r) => ({ ...r, name: r.name })),
       robots: data.robots,
     });
-    gameStore.setAvailableCards(data.availableCards);
+    // Hand arrives via a separate hand_update message
+  }
+
+  handleHandUpdate(data) {
+    const gameStore = useGameStore();
+    gameStore.setAvailableCards(data.hand);
   }
 
   handleGameStateUpdate(data) {

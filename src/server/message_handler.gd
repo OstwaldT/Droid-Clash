@@ -77,14 +77,22 @@ func _on_turn_submit_message(client_id: PackedByteArray, message: Dictionary) ->
 		ws_server._send_error(client_id, "INVALID_TURN", "Wrong turn number")
 		return
 	
-	# Validate card selection
+	# Validate card count
 	if card_ids.size() != 3:
 		ws_server._send_error(client_id, "INVALID_CARDS", "Must select exactly 3 cards")
 		return
-	
-	if card_ids.size() != card_ids.size():  # Check for duplicates
-		ws_server._send_error(client_id, "DUPLICATE_CARDS", "Cannot select same card twice")
-		return
+
+	# Validate that all submitted instance IDs are in the player's current hand
+	var valid_hand_ids := game_manager.player_decks[player_id].get_hand_instance_ids()
+	var seen := {}
+	for inst_id in card_ids:
+		if inst_id not in valid_hand_ids:
+			ws_server._send_error(client_id, "INVALID_CARD", "Card %d not in your hand" % inst_id)
+			return
+		if inst_id in seen:
+			ws_server._send_error(client_id, "DUPLICATE_CARDS", "Cannot play the same card twice")
+			return
+		seen[inst_id] = true
 	
 	# Accept turn
 	if game_manager.submit_turn(player_id, card_ids):
@@ -162,6 +170,7 @@ func _broadcast_player_list() -> void:
 func _broadcast_game_start() -> void:
 	var game_state = game_manager.to_dict()
 
+	# Broadcast common game state to all players
 	ws_server.broadcast({
 		"type": "game_start",
 		"timestamp": Time.get_ticks_msec(),
@@ -171,15 +180,14 @@ func _broadcast_game_start() -> void:
 			"turnNumber": game_state["turnNumber"],
 			"phase": "card_selection",
 			"robots": game_state["robots"],
-			"availableCards": [
-				{"id": 1, "name": "Move Forward", "instruction": "move", "icon": "🔼"},
-				{"id": 2, "name": "Turn Left", "instruction": "turn_left", "icon": "↶"},
-				{"id": 3, "name": "Turn Right", "instruction": "turn_right", "icon": "↷"},
-				{"id": 4, "name": "Attack", "instruction": "attack", "icon": "💥"}
-			],
 			"turnTimeoutSeconds": 30
 		}
 	})
+
+	# Deal initial hands and send each player their private 6-card hand
+	for player_id in game_manager.players.keys():
+		game_manager.deal_player_hand(player_id)
+		_send_hand_update(player_id)
 
 func _on_turn_executed(events: Array) -> void:
 	var game_state := game_manager.to_dict()
@@ -210,6 +218,12 @@ func _on_turn_executed(events: Array) -> void:
 				"finalPlayers": game_state["robots"]
 			}
 		})
+		return  # no new hands needed if game is over
+
+	# Resolve played cards, draw new hands, and send them to each player
+	for player_id in game_manager.players.keys():
+		game_manager.resolve_and_redraw_player_hand(player_id)
+		_send_hand_update(player_id)
 
 ## Serialize event array for JSON — converts Vector2i values to {q, r} dicts.
 func _serialize_events(events: Array) -> Array:
@@ -224,3 +238,15 @@ func _serialize_events(events: Array) -> Array:
 				e[key] = val
 		out.append(e)
 	return out
+
+## Send a player their current 6-card hand as a private message.
+func _send_hand_update(player_id: int) -> void:
+	var player_info := game_manager.players.get(player_id, {})
+	var client_id = player_info.get("client_id")
+	if not client_id:
+		return
+	ws_server.send_to_player(client_id, {
+		"type": "hand_update",
+		"timestamp": Time.get_ticks_msec(),
+		"data": {"hand": game_manager.get_player_hand_data(player_id)}
+	})

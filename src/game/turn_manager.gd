@@ -37,19 +37,20 @@ func execute_round() -> Array:
 	
 	# Execute each player's cards in sequence
 	for player_id in players_to_execute:
-		var card_ids = card_submissions.get(player_id, [])
+		var instance_ids = card_submissions.get(player_id, [])
 		var robot = game_manager.robots[player_id]
 		
-		# Execute each card in order
-		for card_id in card_ids:
-			var result = instructions.execute_instruction(card_id, robot, grid, game_manager.robots)
+		for instance_id in instance_ids:
+			# Resolve instance ID → instruction type ID via the player's deck
+			var type_id := game_manager.get_card_type_id(player_id, instance_id)
+			if type_id == -1:
+				continue  # unknown card — skip gracefully
 			
-			# Record event
-			var event = {
-				"playerId": player_id,
-				"cardId": card_id,
-				"type": "instruction_executed"
-			}
+			var result = instructions.execute_instruction(type_id, robot, grid, game_manager.robots)
+			
+			# Build event; merge result FIRST so "type" (InstructionType int)
+			# is not shadowed by a stale string value
+			var event := {"playerId": player_id, "instanceId": instance_id, "typeId": type_id}
 			event.merge(result)
 			events.append(event)
 	

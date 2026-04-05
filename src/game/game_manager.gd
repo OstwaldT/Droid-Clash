@@ -29,8 +29,9 @@ var current_turn: int = 0
 var max_players: int = 8
 var turn_timeout: float = 30.0
 
-var players: Dictionary = {}  # player_id -> {"name": str, "client_id": PackedByteArray}
-var robots: Dictionary = {}   # player_id -> Robot
+var players: Dictionary = {}       # player_id -> {name, client_id, submitted, color, submitted_instance_ids}
+var robots: Dictionary = {}        # player_id -> Robot
+var player_decks: Dictionary = {}  # player_id -> Deck
 var grid: HexGrid
 var turn_queue: Array = []
 var turn_manager: TurnManager = null  # set by main.gd after TurnManager is created
@@ -50,12 +51,14 @@ func add_player(player_id: int, player_name: String, client_id: PackedByteArray)
 		"name": player_name,
 		"client_id": client_id,
 		"submitted": false,
-		"color": color
+		"color": color,
+		"submitted_instance_ids": []
 	}
 	
 	# Spawn robot at a random valid position on the hex board
 	var start_pos := grid.get_random_valid_hex()
 	robots[player_id] = Robot.new(player_id, player_name, start_pos, color)
+	player_decks[player_id] = Deck.new()
 	
 	player_joined.emit(player_id, player_name)
 	print("Player %d (%s) joined" % [player_id, player_name])
@@ -66,6 +69,7 @@ func remove_player(player_id: int) -> void:
 	if player_id in players:
 		players.erase(player_id)
 		robots.erase(player_id)
+		player_decks.erase(player_id)
 		player_left.emit(player_id)
 		print("Player %d left" % player_id)
 		
@@ -101,15 +105,16 @@ func get_all_players() -> Array:
 			result.append(robot.to_dict())
 	return result
 
-func submit_turn(player_id: int, card_ids: Array) -> bool:
+func submit_turn(player_id: int, instance_ids: Array) -> bool:
 	if player_id not in players:
 		return false
 
 	players[player_id]["submitted"] = true
+	players[player_id]["submitted_instance_ids"] = instance_ids
 
 	# Forward card selection to TurnManager
 	if turn_manager:
-		turn_manager.submit_turn(player_id, card_ids)
+		turn_manager.submit_turn(player_id, instance_ids)
 
 	# Execute the round as soon as every alive player has submitted
 	if turn_manager and are_all_turns_submitted():
@@ -126,6 +131,32 @@ func are_all_turns_submitted() -> bool:
 func reset_turn_submissions() -> void:
 	for player_id in players.keys():
 		players[player_id]["submitted"] = false
+		players[player_id]["submitted_instance_ids"] = []
+
+## Look up the instruction type ID for a card instance in a player's current hand.
+func get_card_type_id(player_id: int, instance_id: int) -> int:
+	var deck: Deck = player_decks.get(player_id)
+	return deck.get_type_id(instance_id) if deck else -1
+
+## Draw the initial hand for a player (called at game start).
+func deal_player_hand(player_id: int) -> Array:
+	var deck: Deck = player_decks.get(player_id)
+	return deck.draw_hand() if deck else []
+
+## Serialised hand data for sending to the client.
+func get_player_hand_data(player_id: int) -> Array:
+	var deck: Deck = player_decks.get(player_id)
+	return deck.hand_to_array() if deck else []
+
+## Resolve the played hand (discard played cards, return unchosen ones),
+## then draw a fresh hand. Call this after turn_manager.execute_round().
+func resolve_and_redraw_player_hand(player_id: int) -> Array:
+	var deck: Deck = player_decks.get(player_id)
+	if not deck:
+		return []
+	var played := players[player_id].get("submitted_instance_ids", [])
+	deck.resolve_hand(played)
+	return deck.draw_hand()
 
 func to_dict() -> Dictionary:
 	return {
