@@ -16,6 +16,9 @@ export const useGameStore = defineStore('game', () => {
   const availableCards = ref([])
   const selectedCards = ref([])
 
+  // Turn submission state
+  const turnSubmitted = ref(false)
+
   // Actions
   const setGameState = (state) => {
     gameId.value = state.gameId
@@ -50,6 +53,11 @@ export const useGameStore = defineStore('game', () => {
 
   const clearSelectedCards = () => {
     selectedCards.value = []
+    turnSubmitted.value = false
+  }
+
+  const setTurnSubmitted = (val) => {
+    turnSubmitted.value = val
   }
 
   const isCardSelected = (cardId) => {
@@ -71,8 +79,10 @@ export const useGameStore = defineStore('game', () => {
     robots,
     availableCards,
     selectedCards,
+    turnSubmitted,
     setGameState,
     setAvailableCards,
+    setTurnSubmitted,
     selectCard,
     clearSelectedCards,
     isCardSelected,

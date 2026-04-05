@@ -170,6 +170,7 @@ class WebSocketClient {
     gameStore.robots = data.robots;
     gameStore.turnNumber = data.turnNumber;
     gameStore.phase = data.currentPhase || "card_selection";
+    gameStore.clearSelectedCards(); // clears cards + resets turnSubmitted for next turn
   }
 
   handleError(data) {
