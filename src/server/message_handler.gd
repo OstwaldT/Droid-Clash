@@ -201,21 +201,21 @@ func _broadcast_game_start() -> void:
 func _on_turn_executed(events: Array) -> void:
 	var game_state := game_manager.to_dict()
 
-	ws_server.broadcast({
-		"type": "game_state_update",
-		"timestamp": Time.get_ticks_msec(),
-		"data": {
-			"turnNumber": game_state["turnNumber"],
-			"currentPhase": "card_selection",
-			"robots": game_state["robots"],
-			"events": _serialize_events(events),
-			"playerStatuses": _build_player_statuses("selecting")
-		}
-	})
-
-	# Check win condition after every round
+	# Check win condition first — if game is over, don't deal new hands
 	var alive := game_manager.get_alive_players()
 	if alive.size() <= 1 and game_manager.phase == GameManager.GamePhase.PLAYING:
+		# Broadcast final state before ending the game
+		ws_server.broadcast({
+			"type": "game_state_update",
+			"timestamp": Time.get_ticks_msec(),
+			"data": {
+				"turnNumber": game_state["turnNumber"],
+				"currentPhase": "game_over",
+				"robots": game_state["robots"],
+				"events": _serialize_events(events),
+				"playerStatuses": _build_player_statuses("selecting")
+			}
+		})
 		game_manager.end_game()
 		var winner_id: int = alive[0] if alive.size() == 1 else -1
 		var winner_robot: Robot = game_manager.robots.get(winner_id)
@@ -228,12 +228,26 @@ func _on_turn_executed(events: Array) -> void:
 				"finalPlayers": game_state["robots"]
 			}
 		})
-		return  # no new hands needed if game is over
+		return
 
-	# Resolve played cards, draw new hands, and send them to each player
+	# Resolve played cards and deal new hands BEFORE broadcasting game_state_update.
+	# This ensures hand_update arrives at each client before the phase switches back
+	# to card_selection — preventing stale-ID submissions when players click fast.
 	for player_id in game_manager.players.keys():
 		game_manager.resolve_and_redraw_player_hand(player_id)
 		_send_hand_update(player_id)
+
+	ws_server.broadcast({
+		"type": "game_state_update",
+		"timestamp": Time.get_ticks_msec(),
+		"data": {
+			"turnNumber": game_state["turnNumber"],
+			"currentPhase": "card_selection",
+			"robots": game_state["robots"],
+			"events": _serialize_events(events),
+			"playerStatuses": _build_player_statuses("selecting")
+		}
+	})
 
 ## Serialize event array for JSON — converts Vector2i values to {q, r} dicts.
 func _serialize_events(events: Array) -> Array:

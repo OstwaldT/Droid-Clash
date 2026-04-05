@@ -42,7 +42,13 @@
         <h1 class="text-3xl font-bold text-center mb-2" :style="{ color: playerStore.playerColor }">Select Your Cards</h1>
         <p class="text-center text-gray-600 mb-6">Choose 3 cards for this turn ({{ gameStore.selectedCards.length }}/3)</p>
 
-        <div class="grid grid-cols-3 gap-3 mb-8">
+        <!-- Loading state while waiting for new hand after a round -->
+        <div v-if="gameStore.availableCards.length === 0" class="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
+          <span class="text-4xl animate-spin">⏳</span>
+          <span class="text-sm font-medium">Receiving new hand…</span>
+        </div>
+
+        <div v-else class="grid grid-cols-3 gap-3 mb-8">
           <button
             v-for="card in gameStore.availableCards"
             :key="card.id"
@@ -66,6 +72,7 @@
         </div>
 
         <button
+          v-if="gameStore.availableCards.length > 0"
           @click="submitTurn"
           :disabled="!gameStore.canSubmitTurn"
           class="w-full py-3 text-white font-bold text-lg rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"

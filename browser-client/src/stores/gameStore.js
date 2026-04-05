@@ -56,6 +56,7 @@ export const useGameStore = defineStore('game', () => {
 
   const clearSelectedCards = () => {
     selectedCards.value = []
+    availableCards.value = []   // also wipe the hand — new one arrives via hand_update
     turnSubmitted.value = false
   }
 
