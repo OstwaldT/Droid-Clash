@@ -106,7 +106,7 @@ func _on_turn_executed(events: Array) -> void:
 	# Step durations (seconds to wait after each event type)
 	const MOVE_STEP    := 0.85   # move tween (0.75s) + gap
 	const TURN_STEP    := 0.45   # rotation tween (0.28s) + gap
-	const ATTACK_STEP  := 0.72   # lunge (0.14s) + retract (0.26s) + gap
+	const ATTACK_STEP  := 0.90   # lunge (0.14s) + retract (0.26s) + explosion gap
 	const BLOCKED_STEP := 0.35   # bump anim + gap
 	const FALL_STEP    := 1.10   # slide (0.30s) + plummet (0.70s) + gap
 
@@ -144,11 +144,14 @@ func _on_turn_executed(events: Array) -> void:
 					var target_id: int = event.get("target", -1)
 					var target_visual: RobotVisual = _robot_visuals.get(target_id)
 					if target_visual:
-						target_visual.flash_hit()
-						# Update HP bar immediately so it drops when the hit lands
 						var target_robot: Robot = game_manager.robots.get(target_id)
-						if target_robot:
-							target_visual.update_health(target_robot.health, target_robot.max_health)
+						if target_robot and not target_robot.is_alive():
+							# Killing blow — explode instead of flash
+							target_visual.explode()
+						else:
+							target_visual.flash_hit()
+							if target_robot:
+								target_visual.update_health(target_robot.health, target_robot.max_health)
 				await get_tree().create_timer(ATTACK_STEP).timeout
 
 	# Final sync: snap all visuals to authoritative post-round robot state

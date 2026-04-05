@@ -266,3 +266,69 @@ func mark_dead() -> void:
 	barrel_mat.albedo_color = Color(0.3, 0.3, 0.3)
 	barrel_mat.metallic = 0.0
 	_name_label.modulate = Color(0.45, 0.45, 0.45)
+
+## Explosion death: flash orange, scatter debris, shrink robot to nothing.
+func explode() -> void:
+	if _is_dead:
+		return
+	_is_dead = true
+
+	# Flash body bright orange with strong emission
+	var body_mat := _body_mesh.material_override as StandardMaterial3D
+	body_mat.albedo_color        = Color(1.0, 0.55, 0.05)
+	body_mat.emission_enabled    = true
+	body_mat.emission            = Color(1.0, 0.4, 0.0)
+	body_mat.emission_energy_multiplier = 4.0
+
+	# Scatter 8 debris chunks outward from the robot's position
+	for i in range(8):
+		var debris := MeshInstance3D.new()
+		var dmesh  := BoxMesh.new()
+		dmesh.size = Vector3(
+			randf_range(0.07, 0.17),
+			randf_range(0.07, 0.17),
+			randf_range(0.07, 0.17)
+		)
+		debris.mesh = dmesh
+
+		var dmat := StandardMaterial3D.new()
+		dmat.albedo_color     = Color(randf_range(0.8, 1.0), randf_range(0.1, 0.55), 0.0)
+		dmat.emission_enabled = true
+		dmat.emission         = dmat.albedo_color * 1.5
+		debris.material_override = dmat
+
+		# Start at robot center (position is relative to parent = GameBoard3D)
+		debris.position = position + Vector3(0.0, 0.5, 0.0)
+		get_parent().add_child(debris)
+
+		# Random outward direction; slight upward arc
+		var angle  := TAU * float(i) / 8.0 + randf_range(-0.4, 0.4)
+		var radius := randf_range(0.7, 1.5)
+		var peak_y := randf_range(0.4, 1.1)
+		var dest := debris.position + Vector3(
+			sin(angle) * radius,
+			peak_y,
+			cos(angle) * radius
+		)
+
+		var dt := debris.create_tween()
+		dt.set_parallel(true)
+		dt.set_ease(Tween.EASE_OUT)
+		dt.set_trans(Tween.TRANS_QUAD)
+		dt.tween_property(debris, "position", dest, 0.55)
+		dt.tween_property(debris, "scale", Vector3.ZERO, 0.50)
+
+		# Free after animation
+		get_tree().create_timer(0.60).timeout.connect(debris.queue_free)
+
+	# Main robot: brief scale-up burst then collapse to nothing
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_BACK)
+	tween.tween_property(self, "scale", Vector3(1.7, 1.7, 1.7), 0.10)
+	tween.set_ease(Tween.EASE_IN)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(self, "scale", Vector3.ZERO, 0.28)
+	await tween.finished
+	visible = false
+	scale   = Vector3.ONE  # reset so mark_dead guard still works cleanly
