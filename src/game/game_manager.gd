@@ -40,6 +40,7 @@ var turn_manager: TurnManager = null  # set by main.gd after TurnManager is crea
 
 func _init() -> void:
 	grid = HexGrid.new(5)  # hexagonal board, side length 5 (radius 4, 61 tiles)
+	grid.generate_map()
 	set_process(true)
 
 func add_player(player_id: int, player_name: String, client_id: PackedByteArray) -> bool:
@@ -173,6 +174,7 @@ func resolve_and_redraw_player_hand(player_id: int) -> Array:
 func reset_for_rematch() -> void:
 	phase = GamePhase.LOBBY
 	current_turn = 0
+	grid.generate_map()  # fresh map layout each rematch
 	if turn_manager:
 		turn_manager.reset_priority()
 	for player_id in players.keys():

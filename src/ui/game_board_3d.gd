@@ -26,6 +26,7 @@ const PLAYER_COLORS: Array = [
 var game_manager: GameManager
 var game_over_panel: GameOverPanel = null  # set by main.gd after both are created
 var _robot_visuals: Dictionary = {}  # player_id -> RobotVisual
+var _hex_tiles: Dictionary = {}      # Vector2i -> Node3D (for rematch regeneration)
 
 # --- Setup ---
 
@@ -41,10 +42,17 @@ func setup(gm: GameManager, tm: TurnManager) -> void:
 # --- Hex grid generation ---
 
 func _generate_hex_grid() -> void:
-	for hex in game_manager.grid.get_all_hexes():
-		_spawn_hex_tile(hex.x, hex.y)
+	var grid: HexGrid = game_manager.grid
+	for hex in grid.get_all_hexes():
+		if grid.is_hole(hex):
+			_spawn_pit_marker(hex.x, hex.y)
+		elif grid.is_obstacle(hex):
+			_spawn_wall_tile(hex.x, hex.y)
+		else:
+			_spawn_floor_tile(hex.x, hex.y)
 
-func _spawn_hex_tile(q: int, r: int) -> void:
+## Regular walkable floor tile.
+func _spawn_floor_tile(q: int, r: int) -> void:
 	var tile := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = HEX_SIZE - TILE_GAP
@@ -54,16 +62,96 @@ func _spawn_hex_tile(q: int, r: int) -> void:
 	tile.mesh = mesh
 
 	var mat := StandardMaterial3D.new()
-	# Subtle alternating shading for readability without looking busy
 	var base: float = 0.22 if (q + r) % 2 == 0 else 0.30
 	mat.albedo_color = Color(base, base + 0.04, base + 0.02)
 	mat.roughness = 0.85
 	tile.material_override = mat
 
-	# Rotate 30° so the flat edge faces forward (flat-top orientation)
 	tile.rotation_degrees.y = 30.0
 	tile.position = hex_to_world(q, r)
 	add_child(tile)
+	_hex_tiles[Vector2i(q, r)] = tile
+
+## Tall wall/obstacle tile — blocks movement.
+func _spawn_wall_tile(q: int, r: int) -> void:
+	const WALL_H: float = 1.1
+	var root := Node3D.new()
+	root.position = hex_to_world(q, r)
+	add_child(root)
+	_hex_tiles[Vector2i(q, r)] = root
+
+	# Base flush with floor
+	var base_mesh := MeshInstance3D.new()
+	var bmesh := CylinderMesh.new()
+	bmesh.top_radius = HEX_SIZE - TILE_GAP
+	bmesh.bottom_radius = HEX_SIZE - TILE_GAP
+	bmesh.height = HEX_HEIGHT
+	bmesh.radial_segments = 6
+	base_mesh.mesh = bmesh
+	var bmat := StandardMaterial3D.new()
+	bmat.albedo_color = Color(0.10, 0.10, 0.13)
+	bmat.roughness = 1.0
+	base_mesh.material_override = bmat
+	base_mesh.rotation_degrees.y = 30.0
+	root.add_child(base_mesh)
+
+	# Tall wall block sitting on top of the base
+	var wall_mesh := MeshInstance3D.new()
+	var wmesh := CylinderMesh.new()
+	wmesh.top_radius = HEX_SIZE * 0.82 - TILE_GAP
+	wmesh.bottom_radius = HEX_SIZE * 0.82 - TILE_GAP
+	wmesh.height = WALL_H
+	wmesh.radial_segments = 6
+	wall_mesh.mesh = wmesh
+	wall_mesh.rotation_degrees.y = 30.0
+	wall_mesh.position.y = HEX_HEIGHT * 0.5 + WALL_H * 0.5
+	var wmat := StandardMaterial3D.new()
+	wmat.albedo_color = Color(0.14, 0.13, 0.17)
+	wmat.roughness = 0.92
+	wmat.metallic = 0.12
+	wall_mesh.material_override = wmat
+	root.add_child(wall_mesh)
+
+	# Glowing top cap — marks it clearly as a wall
+	var cap_mesh := MeshInstance3D.new()
+	var cmesh := CylinderMesh.new()
+	cmesh.top_radius = HEX_SIZE * 0.82 - TILE_GAP
+	cmesh.bottom_radius = HEX_SIZE * 0.82 - TILE_GAP
+	cmesh.height = 0.04
+	cmesh.radial_segments = 6
+	cap_mesh.mesh = cmesh
+	cap_mesh.rotation_degrees.y = 30.0
+	cap_mesh.position.y = HEX_HEIGHT * 0.5 + WALL_H + 0.02
+	var cmat := StandardMaterial3D.new()
+	cmat.albedo_color = Color(0.30, 0.28, 0.40)
+	cmat.emission_enabled = true
+	cmat.emission = Color(0.18, 0.15, 0.35)
+	cmat.emission_energy_multiplier = 1.2
+	cap_mesh.material_override = cmat
+	root.add_child(cap_mesh)
+
+## Dark pit marker shown where a hole tile would be.
+func _spawn_pit_marker(q: int, r: int) -> void:
+	var pit := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = HEX_SIZE * 0.85
+	mesh.bottom_radius = HEX_SIZE * 0.75
+	mesh.height = 0.06
+	mesh.radial_segments = 6
+	pit.mesh = mesh
+	pit.rotation_degrees.y = 30.0
+	pit.position = hex_to_world(q, r)
+	pit.position.y = -0.22
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.04, 0.01, 0.01)
+	mat.emission_enabled = true
+	mat.emission = Color(0.35, 0.05, 0.0)
+	mat.emission_energy_multiplier = 0.6
+	mat.roughness = 1.0
+	pit.material_override = mat
+	add_child(pit)
+	_hex_tiles[Vector2i(q, r)] = pit
 
 # --- Coordinate conversion (flat-top axial) ---
 
@@ -113,6 +201,12 @@ func _on_player_left(player_id: int) -> void:
 func _on_game_restarted() -> void:
 	if game_over_panel:
 		game_over_panel.visible = false
+	# Tear down and regenerate tiles (map layout changes each rematch)
+	for tile in _hex_tiles.values():
+		tile.queue_free()
+	_hex_tiles.clear()
+	_generate_hex_grid()
+	# Reposition robots
 	for player_id in game_manager.robots.keys():
 		var robot: Robot = game_manager.robots[player_id]
 		var visual: RobotVisual = _robot_visuals.get(player_id)

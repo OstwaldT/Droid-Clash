@@ -23,16 +23,19 @@ func _init(pid: int, pname: String, start_pos: Vector2i, pcolor: String = "#ffff
 ## all_robots: Dictionary of player_id -> Robot, used to detect occupancy.
 func move_forward(grid: HexGrid, all_robots: Dictionary = {}) -> String:
 	var next_pos = grid.get_neighbor_in_direction(position, direction)
-	if not grid.is_valid(next_pos):
+	# Off-edge OR hole → robot falls to their death
+	if not grid.is_valid(next_pos) or not grid.has_tile(next_pos):
 		take_damage(max_health)
 		return "fell"
+	# Occupied by another living robot → blocked
 	for other in all_robots.values():
 		if other != self and other.is_alive() and other.position == next_pos:
 			return "blocked"
-	if grid.is_walkable(next_pos):
-		position = next_pos
-		return "moved"
-	return "blocked"
+	# Wall/obstacle → blocked
+	if not grid.is_walkable(next_pos):
+		return "blocked"
+	position = next_pos
+	return "moved"
 
 ## Turn left (counter-clockwise)
 func turn_left() -> void:
