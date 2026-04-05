@@ -202,14 +202,21 @@ func bump_blocked() -> void:
 	tween.tween_property(self, "position", fwd, 0.12)
 	tween.tween_property(self, "position", position, 0.18)
 
-## Scale pulse when this robot fires an attack.
-func flash_attack() -> void:
+## Forward strike animation: lunge toward the target, then snap back.
+func strike_forward() -> void:
 	if _is_dead:
 		return
+	var origin := position
+	var fwd := position + Vector3(sin(rotation.y), 0.0, cos(rotation.y)) * 0.60
 	var tween := create_tween()
+	# Fast punch forward
 	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector3(1.18, 1.18, 1.18), 0.12)
-	tween.tween_property(self, "scale", Vector3.ONE, 0.20)
+	tween.set_trans(Tween.TRANS_QUART)
+	tween.tween_property(self, "position", fwd, 0.14)
+	# Slower pull back
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(self, "position", origin, 0.26)
 
 ## Red flash when this robot is hit.
 func flash_hit() -> void:
