@@ -1,6 +1,6 @@
-# Droid-Clash System Architecture
+# Droid-Clash: System Architecture
 
-## Overview Diagram
+## Overview
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -12,454 +12,173 @@
 └─────────┼─────────────────┼─────────────────┼──────────┘
           │                 │                 │
           └─────────────────┼─────────────────┘
-                            │
-                    WebSocket Protocol
-                  (JSON messages, bi-directional)
-                            │
+                            │  WebSocket JSON (port 8080)
 ┌─────────────────────────────────────────────────────────┐
-│         Godot Game Server (GDScript)                    │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │ WebSocket Server (Port 8080)                     │  │
-│  │  - Accept connections                           │  │
-│  │  - Route messages                               │  │
-│  │  - Broadcast state updates                      │  │
-│  └──────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │ Game Manager                                     │  │
-│  │  - Lobby management                             │  │
-│  │  - Turn sequencing                              │  │
-│  │  - Win/lose conditions                          │  │
-│  └──────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │ Game State                                       │  │
-│  │  - Active players                               │  │
-│  │  - Robot positions & health                     │  │
-│  │  - Turn queue                                   │  │
-│  │  - Cards played                                 │  │
-│  └──────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │ Game Entities                                    │  │
-│  │  - Hexagonal Grid (coordinates, pathfinding)    │  │
-│  │  - Robots (position, health, direction)         │  │
-│  │  - Instructions (move, turn, attack)            │  │
-│  └──────────────────────────────────────────────────┘  │
+│         Godot 4.2 Game Server (GDScript)                │
+│  ┌────────────────────┐  ┌──────────────────────────┐  │
+│  │ WebSocket Server   │  │ Message Handler          │  │
+│  │ (port 8080)        │  │ (routing, validation)    │  │
+│  └────────────────────┘  └──────────────────────────┘  │
+│  ┌────────────────────┐  ┌──────────────────────────┐  │
+│  │ Game Manager       │  │ Turn Manager             │  │
+│  │ (state, players,   │  │ (round execution,        │  │
+│  │  colors, decks)    │  │  CardRegistry, events)   │  │
+│  └────────────────────┘  └──────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │ Entities                                           │ │
+│  │  HexGrid · Robot · Deck                            │ │
+│  │  Cards: CardBase / Move / TurnL / TurnR / Attack   │ │
+│  │  CardRegistry (factory + COMPOSITION)              │ │
+│  └────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │ UI (Godot 3D display, shared screen)               │ │
+│  │  GameBoard3D · RobotVisual · LobbyPanel            │ │
+│  │  PlayerStatusHUD · ServerStatusPanel               │ │
+│  └────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Data Flow: A Turn Sequence
+## Data Flow: One Turn
 
-### 1. Client Selects Cards
+### 1. New hand delivered privately
 ```
-Player UI (Vue) 
-  → Click 3 cards
-  → { type: "turn_submit", data: { playerId, cardIds: [1,2,3] } }
-  → WebSocket to Server
-```
-
-### 2. Server Receives & Queues
-```
-WebSocket Server (Godot)
-  → message_handler.gd processes message
-  → Validates cards & player
-  → Adds to turn queue
-  → Broadcasts: { type: "turn_received", data: { playerId, accepted: true } }
+Server (after previous round resolved)
+  → resolve_and_redraw_player_hand()
+  → deck.draw_hand() → 6 cards with fresh instance IDs
+  → hand_update (private) → player's browser
+  → game_state_update (broadcast) → all browsers
+    (order matters: hand sent BEFORE game_state_update
+     so client never shows old cards)
 ```
 
-### 3. Server Executes Turn
+### 2. Player selects and submits
 ```
-Turn Manager (Godot)
-  → When all players submitted (or timeout):
-    → Dequeue submitted cards
-    → Execute in sequence
-    → Update game state (positions, health)
-  → Broadcast state: { type: "game_state_update", data: {...} }
+Browser (CardSelection.vue)
+  → pick 3 cards (instance IDs, not type IDs)
+  → { type: "turn_submit", playerId, turnNumber, cardIds: [instId, ...] }
+  → WebSocket → message_handler.gd
+  → validates instance IDs against player's current hand
+  → game_manager.submit_turn()
+  → server: player_statuses_update broadcast (status = "submitted")
+  → browser: turn_accepted (private)
 ```
 
-### 4. Client Syncs & Renders
+### 3. Round executes
 ```
-Vue Client
-  → Receives game_state_update
-  → Updates Pinia store
-  → Re-renders board
-  → Shows updated positions & health
+game_manager (when all alive players submitted)
+  → turn_manager.execute_round()
+    → randomise player order
+    → for each player × 3 cards:
+        CardRegistry.create(type_id).execute(robot, grid, robots)
+        → appends event dict to events array
+  → emits turn_executed(events)
+  → message_handler._on_turn_executed:
+      1. resolve all player hands (hand_update private per player)
+      2. game_state_update broadcast (robots, events, playerStatuses)
+  → game_board_3d._on_turn_executed:
+      sequential await-based animation per event
 ```
 
 ---
 
 ## Key Components
 
-### Godot Server (GDScript)
+### `game_manager.gd`
+- State machine: `LOBBY → PLAYING → GAME_OVER`
+- Holds `players`, `robots`, `player_decks` dicts
+- Assigns a distinct hex color from an 8-color palette on join
+- Signals: `player_joined`, `player_left`, `player_ready`, `player_submitted`, `round_starting`, `game_started`, `game_ended`
 
-#### websocket_server.gd
-```
-Responsibilities:
-  - Listen on port 8080
-  - Accept WebSocket connections
-  - Parse incoming JSON messages
-  - Route to appropriate handlers
-  - Broadcast to connected clients
-```
+### `turn_manager.gd`
+- Collects `card_submissions[player_id] = [instance_id, ...]`
+- `execute_round()`: resolves instance IDs → type IDs via deck, calls `CardRegistry.create(type_id).execute()`
+- `submitted_instance_ids` cleared **after** resolve (not before) to prevent INVALID_CARD race
 
-#### game_manager.gd
+### Card Entity System (`src/entities/cards/`)
 ```
-Responsibilities:
-  - Manage game lifecycle (lobby → play → end)
-  - Add/remove players
-  - Enforce turn sequencing
-  - Validate card selections
-  - Check win conditions
-```
+card_base.gd          Base class, TYPE_* constants (1–4), virtual execute()
+  ├── card_move.gd          TYPE_MOVE=1    🔼 Move forward one hex
+  ├── card_turn_left.gd     TYPE_TURN_LEFT=2   ↶ Rotate CCW
+  ├── card_turn_right.gd    TYPE_TURN_RIGHT=3  ↷ Rotate CW
+  └── card_attack.gd        TYPE_ATTACK=4  💥 15 damage to robot ahead
 
-#### game_state.gd
-```
-Responsibilities:
-  - Store current game state
-  - Serialize to JSON for clients
-  - Immutable updates (functional approach)
+card_registry.gd      static create(type_id) → Card
+                       COMPOSITION = {1:5, 2:3, 3:3, 4:2}  (13 cards total)
 ```
 
-#### turn_manager.gd
+### `deck.gd`
+- Per-player shuffled draw pile + discard pile + current 6-card hand
+- Each drawn card gets a unique monotonic `instance_id`
+- `resolve_hand(played_ids)`: discards the 3 played, returns unchosen 3 to draw pile
+- `hand_to_array()`: serialises hand including `id` (instance), `typeId`, `name`, `icon`, `description`
+
+### `message_handler.gd`
+- Validates `turn_submit` cards are in player's current hand (by instance ID)
+- Guards against duplicate submissions per turn
+- `_on_turn_executed`: sends `hand_update` to each player first, then `game_state_update` broadcast
+- `_broadcast_player_statuses()` called after each submission and on `round_starting`
+
+### `game_board_3d.gd` + `robot_visual.gd`
+- 61 flat-top hexagonal tiles generated as `CylinderMesh`
+- Sequential event animation via `await` timer: MOVE 0.85s, TURN 0.45s, ATTACK 0.55s
+- `RobotVisual`: colored cylinder, health bar (green→yellow→red), billboard name
+- `match Card.TYPE_*` to dispatch animation type
+
+### `player_status_hud.gd`
+- `CanvasLayer` top-right of Godot window
+- One row per player: color swatch · name · badge (Selecting / Submitted / Acting)
+- Connected to `player_submitted`, `round_starting`, `turn_executed` signals
+
+---
+
+## Hexagonal Grid
+
+Flat-top hexagons, axial coordinates (q, r). Board radius = 4 (side 5, 61 tiles).
+
+**Boundary**: `max(|q|, |r|, |q+r|) ≤ 4`
+
+**Directions (0–5 clockwise from top-right):**
 ```
-Responsibilities:
-  - Collect player card selections
-  - Execute instructions in order
-  - Handle collisions & attacks
-  - Update positions & health
+    0: (q+1, r-1)   1: (q+1, r)
+5: (q, r-1)              2: (q, r+1)
+    4: (q-1, r)   3: (q-1, r+1)
 ```
 
-#### hexgrid.gd
-```
-Responsibilities:
-  - Hex coordinate system (axial or cube)
-  - Pathfinding (A* or breadth-first)
-  - Distance calculations
-  - Neighbor queries
-  - Collision detection
-```
+**Distance**: `max(|q1-q2|, |r1-r2|, |q1+r1 - q2-r2|)`
 
-#### robot.gd
-```
-Responsibilities:
-  - Robot state (position, health, direction)
-  - Execute instructions (move, turn, attack)
-  - Collision checking
-```
+---
 
-#### instructions.gd
+## Browser Client (Vue 3)
+
+| Store | Key state |
+|-------|-----------|
+| `gameStore` | `phase`, `turnNumber`, `robots`, `availableCards`, `selectedCards`, `playerStatuses` |
+| `playerStore` | `playerId`, `playerName`, `color`, `isConnected` |
+
+`clearSelectedCards()` also clears `availableCards` — ensures client never submits stale instance IDs from previous hand.
+
+`websocket.js` message flow:
 ```
-Responsibilities:
-  - Define instruction types (move, turn, attack)
-  - Execute instruction logic
-  - Return state changes
+connect           → playerStore (id, color)
+player_joined     → gameStore (player list)
+game_start        → gameStore (phase, robots, boardRadius, playerStatuses)
+hand_update       → gameStore.availableCards  (private, per player)
+turn_accepted     → gameStore.turnSubmitted = true
+player_statuses_update → gameStore.playerStatuses
+game_state_update → gameStore (robots, events, phase, playerStatuses)
+game_over         → gameStore (winner, finalPlayers)
 ```
 
 ---
 
-### Vue 3 Client
+## Error Handling
 
-#### websocket.js (API Layer)
-```javascript
-Responsibilities:
-  - Connect to ws://localhost:8080
-  - Send messages (turn_submit, etc.)
-  - Listen for messages
-  - Dispatch to store on updates
-  - Reconnection logic
-```
+| Scenario | Behaviour |
+|----------|-----------|
+| Invalid card instance ID | `INVALID_CARD` error → client; submission rejected |
+| Duplicate submission | Silently ignored (guard in message_handler) |
+| Player disconnects | Robot removed; game continues if ≥ 2 remain |
+| Stale hand race | Prevented: `hand_update` always sent before `game_state_update` |
 
-#### stores/gameStore.js (Pinia)
-```
-State:
-  - currentGame (game ID, phase, turn number)
-  - players (array of player objects)
-  - board (grid state, positions, health)
-  - selectedCards (current player's card picks)
-  
-Actions:
-  - submitTurn(cardIds)
-  - updateGameState(newState)
-  - setPlayers(players)
-```
-
-#### stores/playerStore.js (Pinia)
-```
-State:
-  - playerId
-  - playerName
-  - isConnected
-  
-Actions:
-  - setPlayer(id, name)
-  - setConnected(bool)
-```
-
-#### components/LobbyScreen.vue
-```
-Purpose:
-  - Player name input
-  - Connect to server
-  - Wait for others / start game
-```
-
-#### components/CardSelection.vue
-```
-Purpose:
-  - Display available cards
-  - Allow player to select 3
-  - Submit turn
-  - Show feedback (accepted/rejected)
-```
-
-#### components/HexBoard.vue
-```
-Purpose:
-  - Render hexagonal grid (SVG or Canvas)
-  - Display robot positions
-  - Show health bars
-  - Animate movement
-```
-
-#### components/GameUI.vue
-```
-Purpose:
-  - Display player turn order
-  - Show current turn
-  - Display action log
-  - End game screen
-```
-
----
-
-## Message Protocol (WebSocket)
-
-### Connection Messages
-
-**Client → Server: Join Lobby**
-```json
-{
-  "type": "join",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerName": "Alice"
-  }
-}
-```
-
-**Server → Client: Player Joined**
-```json
-{
-  "type": "player_joined",
-  "timestamp": 1704067200000,
-  "data": {
-    "players": [
-      { "playerId": 1, "name": "Alice", "ready": false },
-      { "playerId": 2, "name": "Bob", "ready": false }
-    ]
-  }
-}
-```
-
-### Game Messages
-
-**Client → Server: Submit Turn**
-```json
-{
-  "type": "turn_submit",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerId": 1,
-    "cardIds": [5, 7, 9],
-    "turnNumber": 1
-  }
-}
-```
-
-**Server → Client: Turn Accepted**
-```json
-{
-  "type": "turn_accepted",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerId": 1,
-    "turnNumber": 1,
-    "message": "Turn submitted"
-  }
-}
-```
-
-**Server → All Clients: Game State Update**
-```json
-{
-  "type": "game_state_update",
-  "timestamp": 1704067200000,
-  "data": {
-    "turnNumber": 1,
-    "phase": "executing_turn",
-    "robots": [
-      {
-        "playerId": 1,
-        "position": { "q": 0, "r": 0 },
-        "health": 100,
-        "direction": 0
-      },
-      {
-        "playerId": 2,
-        "position": { "q": 1, "r": 0 },
-        "health": 100,
-        "direction": 1
-      }
-    ],
-    "events": [
-      { "type": "move", "playerId": 1, "from": { "q": -1, "r": 0 }, "to": { "q": 0, "r": 0 } },
-      { "type": "attack", "playerId": 1, "target": 2, "damage": 10 }
-    ]
-  }
-}
-```
-
-**Server → All Clients: Game Over**
-```json
-{
-  "type": "game_over",
-  "timestamp": 1704067200000,
-  "data": {
-    "winner": 1,
-    "winnerName": "Alice",
-    "finalPlayers": [
-      { "playerId": 1, "name": "Alice", "health": 45, "rank": 1 },
-      { "playerId": 2, "name": "Bob", "health": 0, "rank": 2 }
-    ]
-  }
-}
-```
-
----
-
-## Game State Schema
-
-```javascript
-{
-  gameId: String,
-  phase: "lobby" | "playing" | "game_over",
-  turnNumber: Number,
-  maxPlayers: Number,
-  
-  players: [
-    {
-      playerId: Number,
-      name: String,
-      isConnected: Boolean,
-      hasTurnSubmitted: Boolean,
-      isAlive: Boolean
-    }
-  ],
-  
-  robots: [
-    {
-      playerId: Number,
-      position: { q: Number, r: Number },
-      direction: Number, // 0-5 (hex directions)
-      health: Number,
-      maxHealth: Number,
-      status: String // "alive", "dead"
-    }
-  ],
-  
-  board: {
-    width: Number,
-    height: Number,
-    obstacles: [] // list of obstacle coordinates
-  },
-  
-  cardsDef: [
-    {
-      id: Number,
-      name: String,
-      instruction: "move" | "turn_left" | "turn_right" | "attack",
-      cooldown: Number
-    }
-  ]
-}
-```
-
----
-
-## Hexagonal Grid System
-
-Using **axial coordinates (q, r)**:
-- q: column (increases to the right)
-- r: row (increases downward)
-
-### Directions (0-5, clockwise)
-```
-      /\    
-    /5  0\
-   |      |
-   |4    1|
-    \    /
-    3\2/
-     \/
-```
-
-### Distance Calculation
-```
-distance = (|q1 - q2| + |q1 + r1 - q2 - r2| + |r1 - r2|) / 2
-```
-
-### Neighbor Offsets
-```
-Direction 0: (q+1, r)
-Direction 1: (q+1, r-1)
-Direction 2: (q, r-1)
-Direction 3: (q-1, r)
-Direction 4: (q-1, r+1)
-Direction 5: (q, r+1)
-```
-
----
-
-## Error Handling & Resilience
-
-### WebSocket Disconnect
-- **Client**: Auto-reconnect with exponential backoff
-- **Server**: Remove player, end game if insufficient players
-
-### Invalid Card Selection
-- **Server**: Reject with error message
-- **Client**: Show error toast, allow re-selection
-
-### Collision During Move
-- **Server**: Cancel move, keep robot in place, continue with next instruction
-
-### Network Latency
-- **Client**: Optimistic updates (show card selection immediately)
-- **Server**: Authoritative (updates only when server confirms)
-
----
-
-## Performance Considerations
-
-### Scalability (Target: 8 Players)
-- WebSocket messages: ~100KB per turn
-- Server process: One game instance per game
-- Client rendering: Canvas or SVG, optimize for mobile
-
-### Optimization
-1. **Message Compression**: Use binary format (MessagePack) if needed
-2. **Delta Updates**: Only send changed state, not entire state
-3. **Lazy Rendering**: Only render visible hex tiles
-4. **Debounce**: Throttle animation updates to 60fps
-
----
-
-## Future Extensions
-
-1. **Persistence**: Save games to database
-2. **Replays**: Record & playback turns
-3. **Spectators**: Allow non-playing observers
-4. **Chat**: In-game messaging
-5. **Custom Cards**: Let players design cards
-6. **Different Maps**: Multiple board configurations
-7. **Power-ups**: Special items on grid

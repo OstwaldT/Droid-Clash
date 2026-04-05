@@ -1,529 +1,318 @@
-# WebSocket API Reference
+# Droid-Clash: WebSocket API Reference
 
 ## Connection
 
-### Endpoint
-- **Local Dev**: `ws://localhost:8080`
-- **Production**: `wss://your-domain.com` (secure WebSocket)
+**Endpoint**: `ws://<server-ip>:8080`  
+**Local dev**: `ws://localhost:8080` (set `VITE_WS_URL=ws://localhost:8080`)
 
-### Connection Flow
-
-1. Client connects to WebSocket server
-2. Server accepts and assigns player ID
-3. Client sends `join` message with player name
-4. Server broadcasts `player_joined` to all clients
-
----
-
-## Message Format
-
-All messages are JSON with this structure:
-
+All messages are flat JSON objects — no wrapper envelope:
 ```json
-{
-  "type": "message_type",
-  "timestamp": 1704067200000,
-  "data": { }
-}
+{ "type": "message_type", "field1": ..., "field2": ... }
 ```
 
-**Fields:**
-- `type` (string): Message type identifier
-- `timestamp` (number): Unix timestamp in milliseconds
-- `data` (object): Message-specific payload
-
 ---
 
-## Client → Server Messages
+## Client → Server
 
-### 1. Join Lobby
-
-**Type**: `join`
-
-**Purpose**: Player joins the game lobby
-
-**Payload**:
+### `join`
 ```json
-{
-  "type": "join",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerName": "Alice"
-  }
-}
+{ "type": "join", "playerName": "Alice" }
 ```
 
-**Response**: Server broadcasts `player_joined`
-
-**Error Responses**:
-- Game full: `{ "type": "error", "data": { "code": "GAME_FULL", "message": "..." } }`
-- Invalid name: `{ "type": "error", "data": { "code": "INVALID_NAME", "message": "..." } }`
+**Errors**: `GAME_FULL`, `INVALID_NAME`, `DUPLICATE_NAME`
 
 ---
 
-### 2. Ready / Start Game
-
-**Type**: `ready`
-
-**Purpose**: Player signals they're ready to play
-
-**Payload**:
+### `ready`
 ```json
-{
-  "type": "ready",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerId": 1
-  }
-}
+{ "type": "ready" }
 ```
 
-**Response**: Server broadcasts `players_ready` when all are ready
+Game starts automatically when all joined players send `ready`.
 
 ---
 
-### 3. Submit Turn (Card Selection)
-
-**Type**: `turn_submit`
-
-**Purpose**: Player submits their 3 card selections for the turn
-
-**Payload**:
+### `turn_submit`
 ```json
 {
   "type": "turn_submit",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerId": 1,
-    "turnNumber": 5,
-    "cardIds": [2, 5, 7]
-  }
+  "playerId": "player_1",
+  "turnNumber": 3,
+  "cardIds": [12, 7, 19]
 }
 ```
 
-**Validation**:
-- `cardIds` must be array of exactly 3 unique card IDs
-- `turnNumber` must match server's current turn
-- `playerId` must match authenticated player
+`cardIds` are **instance IDs** from the most recent `hand_update` — not card type IDs. Must be exactly 3 unique IDs from the player's current hand.
 
-**Response**: Server broadcasts `turn_accepted` to player, then `game_state_update` to all when turn executes
-
-**Error Responses**:
-- Wrong turn number: `{ "type": "error", "data": { "code": "INVALID_TURN", "message": "..." } }`
-- Invalid cards: `{ "type": "error", "data": { "code": "INVALID_CARDS", "message": "..." } }`
-- Duplicate cards: `{ "type": "error", "data": { "code": "DUPLICATE_CARDS", "message": "..." } }`
+**Errors**: `PLAYER_NOT_FOUND`, `INVALID_TURN`, `INVALID_CARD`, `INVALID_CARDS`, `DUPLICATE_CARDS`
 
 ---
 
-### 4. Disconnect / Leave
-
-**Type**: `leave`
-
-**Purpose**: Player leaves game
-
-**Payload**:
+### `leave`
 ```json
-{
-  "type": "leave",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerId": 1,
-    "reason": "user_requested"
-  }
-}
+{ "type": "leave" }
 ```
-
-**Response**: Server broadcasts `player_left` to remaining players
 
 ---
 
-## Server → Client Messages
+## Server → Client
 
-### 1. Connection Established
-
-**Type**: `connect`
-
-**Payload**:
+### `connect` *(private — sent only to the joining client)*
 ```json
 {
   "type": "connect",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerId": 1,
-    "wsUrl": "ws://localhost:8080",
-    "status": "connected"
-  }
+  "playerId": "player_1",
+  "color": "#e74c3c",
+  "wsUrl": "ws://192.168.1.32:8080",
+  "status": "connected"
 }
 ```
 
+`color` is a hex string assigned by the server based on join order. Store it in `playerStore`.
+
 ---
 
-### 2. Player Joined Lobby
-
-**Type**: `player_joined`
-
-**Payload**:
+### `player_joined` *(broadcast)*
 ```json
 {
   "type": "player_joined",
-  "timestamp": 1704067200000,
-  "data": {
-    "players": [
-      {
-        "playerId": 1,
-        "name": "Alice",
-        "isReady": false,
-        "health": 100
-      },
-      {
-        "playerId": 2,
-        "name": "Bob",
-        "isReady": false,
-        "health": 100
-      }
-    ],
-    "playerCount": 2,
-    "maxPlayers": 8
-  }
+  "players": [
+    { "playerId": "player_1", "name": "Alice", "color": "#e74c3c", "isReady": false, "health": 100 },
+    { "playerId": "player_2", "name": "Bob",   "color": "#3498db", "isReady": false, "health": 100 }
+  ],
+  "playerCount": 2,
+  "maxPlayers": 8
 }
 ```
 
 ---
 
-### 3. All Players Ready
-
-**Type**: `players_ready`
-
-**Payload**:
-```json
-{
-  "type": "players_ready",
-  "timestamp": 1704067200000,
-  "data": {
-    "message": "All players ready! Game starting...",
-    "countdownSeconds": 3
-  }
-}
-```
-
----
-
-### 4. Game Started
-
-**Type**: `game_start`
-
-**Payload**:
+### `game_start` *(broadcast)*
 ```json
 {
   "type": "game_start",
-  "timestamp": 1704067200000,
-  "data": {
-    "gameId": "game_abc123",
-    "boardWidth": 10,
-    "boardHeight": 10,
-    "turnNumber": 1,
-    "phase": "card_selection",
-    "robots": [
-      {
-        "playerId": 1,
-        "name": "Alice",
-        "position": { "q": 0, "r": 0 },
-        "health": 100,
-        "direction": 0
-      },
-      {
-        "playerId": 2,
-        "name": "Bob",
-        "position": { "q": 9, "r": 9 },
-        "health": 100,
-        "direction": 3
-      }
-    ],
-    "availableCards": [
-      { "id": 1, "name": "Move Forward", "instruction": "move", "icon": "🔼" },
-      { "id": 2, "name": "Turn Left", "instruction": "turn_left", "icon": "↶" },
-      { "id": 3, "name": "Turn Right", "instruction": "turn_right", "icon": "↷" },
-      { "id": 4, "name": "Attack", "instruction": "attack", "icon": "💥" }
-    ],
-    "turnTimeoutSeconds": 30
-  }
+  "gameId": "game_abc123",
+  "boardRadius": 4,
+  "turnNumber": 1,
+  "phase": "card_selection",
+  "robots": [
+    { "playerId": "player_1", "name": "Alice", "color": "#e74c3c",
+      "position": { "q": -2, "r": -1 }, "health": 100, "direction": 0 },
+    { "playerId": "player_2", "name": "Bob",   "color": "#3498db",
+      "position": { "q": 2,  "r": 1  }, "health": 100, "direction": 3 }
+  ],
+  "turnTimeoutSeconds": 30,
+  "playerStatuses": [
+    { "playerId": "player_1", "status": "selecting" },
+    { "playerId": "player_2", "status": "selecting" }
+  ]
 }
 ```
 
+After `game_start`, each player immediately receives a private `hand_update` with their initial hand.
+
 ---
 
-### 5. Turn Accepted
+### `hand_update` *(private — sent only to the addressed player)*
+```json
+{
+  "type": "hand_update",
+  "hand": [
+    { "id": 12, "typeId": 1, "name": "Move Forward", "icon": "🔼", "description": "Move one hex forward" },
+    { "id": 7,  "typeId": 2, "name": "Turn Left",    "icon": "↶", "description": "Rotate 60° counter-clockwise" },
+    { "id": 19, "typeId": 3, "name": "Turn Right",   "icon": "↷", "description": "Rotate 60° clockwise" },
+    { "id": 3,  "typeId": 1, "name": "Move Forward", "icon": "🔼", "description": "Move one hex forward" },
+    { "id": 21, "typeId": 4, "name": "Attack",       "icon": "💥", "description": "Deal 15 damage to robot directly ahead" },
+    { "id": 8,  "typeId": 2, "name": "Turn Left",    "icon": "↶", "description": "Rotate 60° counter-clockwise" }
+  ]
+}
+```
 
-**Type**: `turn_accepted`
+`id` is the **instance ID** — use this in `turn_submit.cardIds`. Multiple cards of the same type have different instance IDs.
 
-**Payload**:
+**Timing**: sent to each player BEFORE the `game_state_update` broadcast so clients always have a valid hand when the UI re-enables.
+
+---
+
+### `turn_accepted` *(private)*
 ```json
 {
   "type": "turn_accepted",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerId": 1,
-    "turnNumber": 5,
-    "message": "Your turn submitted! Waiting for others..."
-  }
+  "playerId": "player_1",
+  "turnNumber": 3,
+  "message": "Turn submitted! Waiting for other players..."
 }
 ```
 
 ---
 
-### 6. Game State Update (Broadcast)
+### `player_statuses_update` *(broadcast)*
 
-**Type**: `game_state_update`
+Sent whenever any player's status changes (e.g., after each submission).
 
-**Payload**:
+```json
+{
+  "type": "player_statuses_update",
+  "playerStatuses": [
+    { "playerId": "player_1", "status": "submitted" },
+    { "playerId": "player_2", "status": "selecting" }
+  ]
+}
+```
+
+Status values: `"selecting"` · `"submitted"` · `"acting"`
+
+---
+
+### `game_state_update` *(broadcast)*
+
+Sent after each round resolves.
+
 ```json
 {
   "type": "game_state_update",
-  "timestamp": 1704067200000,
-  "data": {
-    "turnNumber": 5,
-    "phase": "executing",
-    "robots": [
-      {
-        "playerId": 1,
-        "name": "Alice",
-        "position": { "q": 1, "r": 0 },
-        "health": 90,
-        "direction": 0,
-        "status": "alive"
-      },
-      {
-        "playerId": 2,
-        "name": "Bob",
-        "position": { "q": 8, "r": 8 },
-        "health": 85,
-        "direction": 3,
-        "status": "alive"
-      }
-    ],
-    "events": [
-      {
-        "playerId": 1,
-        "type": "move",
-        "from": { "q": 0, "r": 0 },
-        "to": { "q": 1, "r": 0 },
-        "instruction": 1
-      },
-      {
-        "playerId": 2,
-        "type": "move",
-        "from": { "q": 9, "r": 9 },
-        "to": { "q": 8, "r": 8 },
-        "instruction": 1
-      },
-      {
-        "playerId": 1,
-        "type": "attack",
-        "target": 2,
-        "damage": 15,
-        "hit": false,
-        "instruction": 4
-      }
-    ],
-    "currentPhase": "card_selection",
-    "nextTurnTimeout": 30
-  }
+  "turnNumber": 4,
+  "currentPhase": "card_selection",
+  "robots": [
+    { "playerId": "player_1", "name": "Alice", "color": "#e74c3c",
+      "position": { "q": -1, "r": 0 }, "health": 85, "direction": 1, "status": "alive" },
+    { "playerId": "player_2", "name": "Bob",   "color": "#3498db",
+      "position": { "q": 2,  "r": 1 }, "health": 100, "direction": 3, "status": "alive" }
+  ],
+  "events": [
+    {
+      "playerId": "player_1", "instanceId": 12, "typeId": 1, "type": 1,
+      "success": true, "message": "Moved forward",
+      "from": { "q": -2, "r": 0 }, "to": { "q": -1, "r": 0 }
+    },
+    {
+      "playerId": "player_2", "instanceId": 7, "typeId": 4, "type": 4,
+      "success": true, "message": "Attack hit!",
+      "damage": 15, "target": "player_1"
+    },
+    {
+      "playerId": "player_1", "instanceId": 19, "typeId": 1, "type": 1,
+      "success": false, "message": "Blocked by boundary"
+    }
+  ],
+  "playerStatuses": [
+    { "playerId": "player_1", "status": "selecting" },
+    { "playerId": "player_2", "status": "selecting" }
+  ]
 }
 ```
 
+**Event `type` field** is a card type ID integer (matches `Card.TYPE_*`):
+- `1` = Move Forward
+- `2` = Turn Left  
+- `3` = Turn Right
+- `4` = Attack
+
+Additional event fields by type:
+
+| Type | Extra fields |
+|------|-------------|
+| Move (success) | `from: {q,r}`, `to: {q,r}` |
+| Move (blocked) | `success: false` only |
+| Turn Left/Right | `new_direction: 0–5` |
+| Attack (hit) | `target: playerId`, `damage: 15` |
+| Attack (miss) | `success: false` |
+
 ---
 
-### 7. Game Over
-
-**Type**: `game_over`
-
-**Payload**:
+### `game_over` *(broadcast)*
 ```json
 {
   "type": "game_over",
-  "timestamp": 1704067200000,
-  "data": {
-    "winner": {
-      "playerId": 1,
-      "name": "Alice",
-      "health": 45
-    },
-    "finalRanking": [
-      { "rank": 1, "playerId": 1, "name": "Alice", "health": 45 },
-      { "rank": 2, "playerId": 2, "name": "Bob", "health": 0 }
-    ],
-    "totalTurns": 12,
-    "gameDuration": 300
-  }
+  "winner": "player_1",
+  "winnerName": "Alice",
+  "finalPlayers": [
+    { "playerId": "player_1", "name": "Alice", "health": 45 },
+    { "playerId": "player_2", "name": "Bob",   "health": 0  }
+  ]
 }
 ```
 
 ---
 
-### 8. Player Left
-
-**Type**: `player_left`
-
-**Payload**:
-```json
-{
-  "type": "player_left",
-  "timestamp": 1704067200000,
-  "data": {
-    "playerId": 2,
-    "name": "Bob",
-    "remainingPlayers": 1,
-    "message": "Bob disconnected. Game will end if fewer than 2 players remain."
-  }
-}
-```
-
----
-
-### 9. Error Message
-
-**Type**: `error`
-
-**Payload**:
+### `error` *(private)*
 ```json
 {
   "type": "error",
-  "timestamp": 1704067200000,
-  "data": {
-    "code": "INVALID_TURN",
-    "message": "Turn number mismatch. Expected 5, got 3.",
-    "severity": "error"
-  }
+  "code": "INVALID_CARD",
+  "message": "Card 12 not in your hand",
+  "severity": "error"
 }
 ```
 
-**Common Error Codes**:
-- `GAME_FULL`: Game has reached max players
-- `INVALID_NAME`: Player name is empty or too long
-- `INVALID_TURN`: Wrong turn number submitted
-- `INVALID_CARDS`: Cards don't exist or invalid selection
-- `DUPLICATE_CARDS`: Same card selected twice
-- `PLAYER_NOT_FOUND`: Player ID doesn't exist
-- `UNAUTHORIZED`: Player not authenticated
-- `SERVER_ERROR`: Internal server error
+**Error codes**:
+
+| Code | Meaning |
+|------|---------|
+| `PLAYER_NOT_FOUND` | Player ID not recognized |
+| `GAME_FULL` | Max players reached |
+| `INVALID_NAME` | Name empty or too long |
+| `DUPLICATE_NAME` | Name already taken |
+| `ALREADY_SUBMITTED` | Turn already submitted this round |
+| `INVALID_TURN` | `turnNumber` doesn't match server |
+| `INVALID_CARD` | Instance ID not in player's current hand |
+| `INVALID_CARDS` | Wrong number of cards |
+| `DUPLICATE_CARDS` | Same instance ID submitted twice |
 
 ---
 
-### 10. Ping / Heartbeat
+## Card Types Reference
 
-**Type**: `ping`
+| Type ID | Name | Icon | Effect |
+|---------|------|------|--------|
+| 1 | Move Forward | 🔼 | Move one hex in facing direction |
+| 2 | Turn Left | ↶ | Rotate 60° CCW |
+| 3 | Turn Right | ↷ | Rotate 60° CW |
+| 4 | Attack | 💥 | Deal 15 damage to robot directly ahead |
 
-**Payload** (sent by server):
-```json
-{
-  "type": "ping",
-  "timestamp": 1704067200000,
-  "data": {}
-}
-```
-
-**Response** (client sends back):
-```json
-{
-  "type": "pong",
-  "timestamp": 1704067200000,
-  "data": {}
-}
-```
-
-**Purpose**: Keep-alive mechanism to detect disconnects
+**Deck composition per player**: 5× Move, 3× Turn Left, 3× Turn Right, 2× Attack = 13 cards total.
 
 ---
 
-## State Transitions
+## Connection Flow
 
 ```
-LOBBY:
-  join → JOINED
-  
-JOINED:
-  ready → READY
-  
-READY (all players ready):
-  → GAME_START → CARD_SELECTION
-  
-CARD_SELECTION:
-  turn_submit → AWAITING_OTHER_PLAYERS
-  
-AWAITING_OTHER_PLAYERS:
-  all players submitted → EXECUTING → CARD_SELECTION (next turn)
-  
-CARD_SELECTION or EXECUTING:
-  player eliminated → check win condition
-  
-WIN_CONDITION_MET:
-  → GAME_OVER
-  
-GAME_OVER:
-  (game can be reset to LOBBY for next match)
+Client connects
+  ← connect  (private: playerId, color)
+
+Client sends join
+  → join { playerName }
+  ← player_joined (broadcast: full player list)
+
+All players send ready
+  → ready
+  ← player_joined updates as each player readies
+
+When all ready:
+  ← game_start (broadcast: board, robots, playerStatuses)
+  ← hand_update (private: 6-card hand with instance IDs)
+
+Each turn:
+  → turn_submit { playerId, turnNumber, cardIds: [instanceId×3] }
+  ← turn_accepted (private)
+  ← player_statuses_update (broadcast: someone submitted)
+
+When all alive players submitted:
+  [server executes round]
+  ← hand_update (private, new hand for next turn) ← FIRST
+  ← game_state_update (broadcast: events, new positions)
+  (or ← game_over if ≤1 robot alive)
 ```
 
 ---
 
-## Rate Limiting
+## Testing
 
-- **Per-player message rate**: Max 10 messages/second
-- **Duplicate messages**: Ignored if same message sent within 100ms
-- **Turn submission**: Only one per turn allowed
-
----
-
-## Implementation Notes
-
-### Client (Vue 3)
-```javascript
-// Example connection setup
-const ws = new WebSocket('ws://localhost:8080')
-
-ws.onopen = () => {
-  ws.send(JSON.stringify({
-    type: 'join',
-    timestamp: Date.now(),
-    data: { playerName: 'Alice' }
-  }))
-}
-
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data)
-  handleMessage(message)
-}
-```
-
-### Server (Godot GDScript)
-```gdscript
-# Example message handling
-func _on_message_received(message_json: String):
-  var message = JSON.parse_string(message_json)
-  match message['type']:
-    'join':
-      handle_join(message['data'])
-    'turn_submit':
-      handle_turn_submit(message['data'])
-    # ... etc
-```
-
----
-
-## Testing the API
-
-### Using websocat
 ```bash
-# Install: cargo install websocat
-
-# Connect to server
+# Using websocat
 websocat ws://localhost:8080
 
-# Send message (paste and press Enter)
-{"type":"join","timestamp":1704067200000,"data":{"playerName":"TestPlayer"}}
-```
-
-### Using curl (for HTTP endpoints if added)
-```bash
-curl -X POST http://localhost:8080/api/game/state
+# Join
+{"type":"join","playerName":"TestPlayer"}
 ```
 

@@ -23,7 +23,7 @@ signal turn_completed
 signal game_ended
 
 const MAX_PLAYERS = 8
-const GRID_WIDTH = 10
+const BOARD_RADIUS = 4
 
 var current_turn: int = 0
 var _game_state: Dictionary = {}
@@ -168,7 +168,7 @@ const submitTurn = async (cardIds) => {
 **Tailwind First**:
 - Use Tailwind utility classes instead of custom CSS
 - Only write scoped CSS for complex animations or overrides
-- Avoid color hex codes; use Tailwind color palette
+- **Exception**: player colors are dynamic hex strings from the server — use inline `:style` binding for those (e.g., `:style="{ backgroundColor: playerColor }"`)
 
 **Good**:
 ```vue

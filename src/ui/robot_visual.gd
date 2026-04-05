@@ -34,47 +34,55 @@ func setup(pid: int, pname: String, color: Color) -> void:
 func _build_body(color: Color) -> void:
 	_body_mesh = MeshInstance3D.new()
 	var mesh = CylinderMesh.new()
-	mesh.top_radius = 0.35
-	mesh.bottom_radius = 0.35
-	mesh.height = 0.7
-	mesh.radial_segments = 12
+	mesh.top_radius = 0.42
+	mesh.bottom_radius = 0.42
+	mesh.height = 0.68
+	mesh.radial_segments = 3  # triangular prism — vertex points forward
 	_body_mesh.mesh = mesh
-	_body_mesh.position.y = 0.35
+	_body_mesh.position.y = 0.34
+	# Rotate so one vertex points in +Z (forward in local space)
+	_body_mesh.rotation.y = -PI / 2.0
 
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color
-	mat.roughness = 0.6
-	mat.metallic = 0.2
+	mat.roughness = 0.55
+	mat.metallic = 0.25
 	_body_mesh.material_override = mat
 	add_child(_body_mesh)
 
 func _build_head(color: Color) -> void:
 	_head_mesh = MeshInstance3D.new()
 	var mesh = BoxMesh.new()
-	mesh.size = Vector3(0.28, 0.28, 0.28)
+	# Elongated forward (Z) so it reinforces the facing direction
+	mesh.size = Vector3(0.26, 0.22, 0.34)
 	_head_mesh.mesh = mesh
-	_head_mesh.position.y = 0.98
+	_head_mesh.position = Vector3(0.0, 1.01, 0.07)
 
 	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color.darkened(0.3)
-	mat.roughness = 0.5
-	mat.metallic = 0.3
+	mat.albedo_color = color.darkened(0.28)
+	mat.roughness = 0.45
+	mat.metallic = 0.35
 	_head_mesh.material_override = mat
 	add_child(_head_mesh)
 
 func _build_direction_indicator() -> void:
-	## Small white wedge/box that always shows which way the robot faces.
+	## Gun barrel: horizontal cylinder pointing in +Z (forward). Unambiguous direction at a glance.
 	_direction_indicator = MeshInstance3D.new()
-	var mesh = BoxMesh.new()
-	mesh.size = Vector3(0.1, 0.08, 0.3)
+	var mesh = CylinderMesh.new()
+	mesh.top_radius = 0.055
+	mesh.bottom_radius = 0.075
+	mesh.height = 0.52
+	mesh.radial_segments = 8
 	_direction_indicator.mesh = mesh
-	# Sit on top of body, offset forward along local +z
-	_direction_indicator.position = Vector3(0.0, 0.75, 0.28)
+	# Rotate from along-Y to along-Z so barrel points forward
+	_direction_indicator.rotation.x = PI / 2.0
+	# Head front face is at z ≈ 0.24; barrel center = front_face + half_height
+	_direction_indicator.position = Vector3(0.0, 0.93, 0.50)
 
 	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color.WHITE
-	mat.emission_enabled = true
-	mat.emission = Color.WHITE * 0.4
+	mat.albedo_color = Color(0.78, 0.78, 0.78)
+	mat.roughness = 0.25
+	mat.metallic = 0.8
 	_direction_indicator.material_override = mat
 	add_child(_direction_indicator)
 
@@ -217,6 +225,7 @@ func mark_dead() -> void:
 	var grey := Color(0.28, 0.28, 0.28)
 	(_body_mesh.material_override as StandardMaterial3D).albedo_color = grey
 	(_head_mesh.material_override as StandardMaterial3D).albedo_color = grey.darkened(0.2)
-	(_direction_indicator.material_override as StandardMaterial3D).albedo_color = Color(0.4, 0.4, 0.4)
-	(_direction_indicator.material_override as StandardMaterial3D).emission_enabled = false
+	var barrel_mat := _direction_indicator.material_override as StandardMaterial3D
+	barrel_mat.albedo_color = Color(0.3, 0.3, 0.3)
+	barrel_mat.metallic = 0.0
 	_name_label.modulate = Color(0.45, 0.45, 0.45)

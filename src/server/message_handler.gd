@@ -75,8 +75,11 @@ func _on_turn_submit_message(client_id: PackedByteArray, message: Dictionary) ->
 		return
 
 	var data = message.get("data", {})
-	var card_ids = data.get("cardIds", [])
-	var turn_number = data.get("turnNumber", -1)
+	# JSON sends numbers as float — cast to int for correct Array lookup
+	var card_ids: Array[int] = []
+	for raw_id in data.get("cardIds", []):
+		card_ids.append(int(raw_id))
+	var turn_number: int = int(data.get("turnNumber", -1))
 	
 	# Validate turn number
 	if turn_number != game_manager.current_turn:
@@ -132,7 +135,7 @@ func _on_ready_message(client_id: PackedByteArray, message: Dictionary) -> void:
 				all_ready = false
 				break
 
-		if all_ready and game_manager.players.size() >= 2:
+		if all_ready and game_manager.players.size() >= 1:
 			game_manager.start_game()
 			_broadcast_game_start()
 

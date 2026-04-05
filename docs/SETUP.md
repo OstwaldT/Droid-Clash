@@ -1,227 +1,108 @@
-# Droid-Clash Development Setup Guide
+# Droid-Clash: Setup Guide
 
-## Environment Setup
+## Prerequisites
 
-### 1. Godot Server Setup
+| Tool | Minimum version | Download |
+|------|----------------|---------|
+| Godot | 4.2 | https://godotengine.org |
+| Node.js | 18 | https://nodejs.org |
 
-#### Prerequisites
-- Godot 4.2+ (download from https://godotengine.org)
-- GDScript extensions for your editor (VS Code: godottools)
+---
 
-#### Initialize Godot Project
+## 1. Godot Server
+
+1. Open Godot 4.2+
+2. **Import Project** → select this folder
+3. Press **F5** (or the ▶ Play button)
+
+The game window opens with the 3D board and the console prints:
+```
+Initializing Droid-Clash Server...
+WebSocket server listening on port 8080
+Server initialized and ready for connections
+```
+
+**Headless mode** (no window, e.g. CI):
 ```bash
-# The Godot project is already initialized in this folder
-# Open Godot and select this folder as the project
+godot --headless --path .
 ```
 
-**Project Structure to Create:**
-```
-godot/
-├── src/
-│   ├── server/
-│   │   ├── websocket_server.gd       # WebSocket listener
-│   │   └── message_handler.gd        # Message processing
-│   ├── game/
-│   │   ├── game_manager.gd           # Game state & loop
-│   │   ├── game_state.gd             # State definitions
-│   │   └── turn_manager.gd           # Turn sequencing
-│   └── entities/
-│       ├── hexgrid.gd                # Hex grid logic
-│       ├── robot.gd                  # Robot entity
-│       └── instructions.gd           # Card instructions
-└── scenes/
-    ├── main.tscn                     # Main server scene
-    └── hex_grid.tscn                 # Grid visualization
-```
+---
 
-#### Key Configuration (project.godot)
-```ini
-[application]
-run/main_scene="res://scenes/main.tscn"
+## 2. Browser Client
 
-[network]
-websocket/timeout_ms=5000
-
-[debug]
-gdscript/warnings/unused_variable=warn
-```
-
-### 2. Browser Client Setup
-
-#### Prerequisites
-- Node.js 18+ (download from https://nodejs.org)
-- npm (comes with Node.js)
-
-#### Create Vue 3 Project
 ```bash
-# From project root
-npm create vite@latest browser-client -- --template vue
 cd browser-client
 npm install
-
-# Install additional dependencies
-npm install tailwindcss postcss autoprefixer pinia axios
-npx tailwindcss init -p
-```
-
-**Project Structure:**
-```
-browser-client/
-├── src/
-│   ├── components/
-│   │   ├── CardSelection.vue        # Card picker UI
-│   │   ├── HexBoard.vue             # Board display
-│   │   ├── LobbyScreen.vue          # Player setup
-│   │   └── GameUI.vue               # HUD & status
-│   ├── stores/
-│   │   ├── gameStore.js             # Pinia state
-│   │   └── playerStore.js           # Player data
-│   ├── api/
-│   │   └── websocket.js             # WebSocket client
-│   ├── App.vue
-│   └── main.js
-├── public/
-├── package.json
-├── vite.config.js
-├── tailwind.config.js
-└── postcss.config.js
-```
-
-#### Configure Vite (vite.config.js)
-```javascript
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-
-export default defineConfig({
-  plugins: [vue()],
-  server: {
-    port: 5173,
-    strictPort: false
-  }
-})
-```
-
-### 3. Network Configuration
-
-#### Godot WebSocket Server
-- **Bind Address**: `localhost` (127.0.0.1)
-- **Port**: `8080`
-- **Protocol**: WebSocket (ws://)
-- **SSL**: Not required for local dev (wss:// for production)
-
-#### Vue 3 Client Connection
-```javascript
-// browser-client/src/api/websocket.js
-const WS_URL = import.meta.env.DEV 
-  ? 'ws://localhost:8080'
-  : process.env.VITE_WS_URL
-```
-
-#### Message Format
-All WebSocket messages are JSON:
-```json
-{
-  "type": "message_type",
-  "timestamp": 1234567890,
-  "data": { }
-}
-```
-
-See [API.md](API.md) for complete message specification.
-
-### 4. Development Workflow
-
-#### Terminal 1: Start Godot Server
-```bash
-# Run Godot from command line (headless mode in CI, GUI for dev)
-godot --path . --scene scenes/main.tscn
-# Or open Godot IDE and hit Play
-```
-
-#### Terminal 2: Start Vue Dev Server
-```bash
-cd browser-client
 npm run dev
+# → http://localhost:5173
 ```
 
-#### Terminal 3: Optional - Monitor Logs
-```bash
-# Watch Godot output
-tail -f ~/.godot/editor_output.log
+### WebSocket URL
 
-# Or use Godot's debug panel (View > Debug)
+The client connects to the Godot server via WebSocket. Configure the URL:
+
+```bash
+# Local-only testing
+VITE_WS_URL=ws://localhost:8080 npm run dev
+
+# LAN play (default dev fallback, edit websocket.js to match your IP)
+# ws://192.168.1.32:8080
 ```
 
-### 5. Testing Locally
-
-#### Single Player Test
-1. Open browser to `http://localhost:5173`
-2. Enter player name
-3. Watch as client connects to WebSocket server
-4. Verify connection message in Godot console
-
-#### Multi-Player Test (Same Machine)
-1. Open 2+ browser tabs/windows to `http://localhost:5173`
-2. Enter different names in each
-3. Godot server should show all connections
-4. Start game in Godot; clients should sync
-
-#### Mobile Testing
-```bash
-# Get your machine's local IP
-ipconfig getifaddr en0  # macOS/Linux
-# or
-ipconfig  # Windows (find IPv4 address)
-
-# Open on mobile: http://YOUR_IP:5173
+The URL is read in `browser-client/src/api/websocket.js`:
+```javascript
+const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://192.168.1.32:8080'
 ```
 
-### 6. Code Style & Linting
+---
 
-#### Godot (GDScript)
+## 3. Multi-Player Testing
+
+### Same machine (2+ browser tabs)
+1. Start Godot server
+2. Start Vue dev server (`npm run dev`)
+3. Open `http://localhost:5173` in two or more tabs
+4. Enter different names → Join → Ready in each tab
+
+### LAN (phone/other devices)
+1. Find your machine's LAN IP: `ipconfig getifaddr en0` (macOS)
+2. Set `VITE_WS_URL=ws://<your-ip>:8080` in the dev command
+3. On each device, open `http://<your-ip>:5173`
+
+---
+
+## 4. Production Build
+
+### Godot server (headless export)
 ```bash
-# Use Godot's built-in linter
-# Set in Editor → Editor Layout → Output for warnings/errors
-```
-
-#### Vue 3
-```bash
-cd browser-client
-npm install --save-dev eslint prettier
-npm run lint
-npm run format
-```
-
-### 7. Build for Production
-
-#### Godot Server Export
-```bash
-# Set up export templates in Godot
+# Requires export templates installed in Godot
 godot --export-release "Linux Server" builds/server.x86_64
-
-# For different platforms:
-godot --export-release "Windows Desktop" builds/server.exe
-godot --export-release "macOS" builds/server.app
 ```
 
-#### Vue 3 Client Build
+### Vue client
 ```bash
 cd browser-client
 npm run build
-# Output: dist/ folder (ready for hosting)
+# Output: browser-client/dist/  (static files, host anywhere)
 ```
 
-### Troubleshooting
+---
 
-| Issue | Solution |
-|-------|----------|
-| WebSocket connection refused | Ensure Godot server is running on port 8080 |
-| CORS errors in browser | Not applicable for WebSocket; check WS_URL config |
-| Vue components not updating | Check Pinia store setup & message handlers |
-| Grid rendering issues | Verify hex coordinates system & canvas size |
+## Troubleshooting
 
-### Next Steps
+| Symptom | Fix |
+|---------|-----|
+| WebSocket refused | Godot must be running first; check `lsof -i :8080` |
+| Wrong IP / can't connect from phone | Set `VITE_WS_URL` to your LAN IP |
+| `npm run dev` fails | Run `npm install` in `browser-client/` |
+| Cards not executing | All alive players must submit; check Godot console output |
+| GDScript type error at startup | Ensure Godot 4.2+ (not 3.x) |
 
-1. Read [ARCHITECTURE.md](ARCHITECTURE.md) for system design
-2. Review [API.md](API.md) for message protocol
-3. Start with Phase 1 tasks from [../plan.md](../plan.md)
+---
+
+## Editor Tips
+
+- **VS Code + GDScript**: install the **godot-tools** extension
+- **Godot built-in editor**: use the Script tab for `.gd` files; Output tab for runtime logs
+- All GDScript files use `class_name` declarations — Godot's autocompletion works without manual imports

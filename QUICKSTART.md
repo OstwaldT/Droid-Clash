@@ -1,207 +1,101 @@
-# Quick Reference: Development Phases
+# Droid-Clash: Quick Reference
 
-## Phase 1: Foundation & Architecture ✓ DOCUMENTED
+## Running Locally
 
-### Key Files Created
-- ✅ README.md - Project overview & quick start
-- ✅ SETUP.md - Detailed environment setup
-- ✅ ARCHITECTURE.md - System design & data flow
-- ✅ API.md - Complete WebSocket protocol
-- ✅ CONTRIBUTING.md - Code style & guidelines
-- ✅ .copilotignore - Files to ignore
-- ✅ plan.md - Development plan with 6 phases
+### Godot Server
+Open this project in **Godot 4.2+** and press **F5**.
 
-### Remaining Phase 1 Tasks
-- [ ] `setup-godot-structure` - Create src/ and scenes/ directories
-- [ ] `setup-vue-project` - Initialize Vue 3 project with dependencies
-
----
-
-## Phase 2: Core Game Logic
-
-### Priority Order
-1. `hexgrid-system` - Hex grid foundation
-2. `robot-entity` - Robot state & behavior
-3. `instruction-system` - Card execution
-4. `game-manager` - Game state & transitions
-5. `turn-manager` - Turn sequencing & combat
-
-### Key Implementation Notes
-- Use axial coordinates (q, r) for hex system
-- Robot directions: 0-5 (clockwise from top)
-- Instructions execute sequentially: move → turn → attack
-- See ARCHITECTURE.md for hex math formulas
-
----
-
-## Phase 3: Network & Communication
-
-### Priority Order
-1. `websocket-server` - Godot WebSocket listener on port 8080
-2. `message-handler` - Route & validate incoming messages
-3. `websocket-client` - Vue client connection & message handling
-
-### Key Implementation Notes
-- All messages are JSON with `{ type, timestamp, data }`
-- Server broadcasts state to all clients
-- Implement heartbeat/ping-pong for keep-alive
-- See API.md for complete message specifications
-
----
-
-## Phase 4: Browser Client UI
-
-### Priority Order
-1. `game-store` - Pinia store for shared state
-2. `player-store` - Pinia store for player identity
-3. `lobby-ui` - Player name & connect screen
-4. `card-selection-ui` - Select 3 cards per turn
-5. `hex-board-ui` - Hexagonal grid visualization
-6. `game-ui` - HUD, logs, end-game screen
-
-### Key Implementation Notes
-- Use Tailwind CSS for styling (mobile-first)
-- Use Composition API with `<script setup>`
-- Hexboard: render hex tiles in SVG or Canvas
-- Show real-time position updates from server
-
----
-
-## Phase 5: Polish & Testing
-
-### Testing Priority
-1. `api-validation` - Test all WebSocket messages
-2. `local-test-2player` - 2-player same-machine test
-3. `local-test-mobile` - Mobile browser compatibility
-4. `performance-test-8players` - Stress test with 8 players
-
-### Polish Tasks
-- Add turn timeout UI (countdown timer)
-- Smooth robot movement animations
-- Add attack feedback (visual/audio)
-- Error recovery & reconnection logic
-- Mobile touch optimizations
-
----
-
-## Phase 6: Deployment & DevOps
-
-### Tasks
-1. `docker-setup` - Containerize Godot server
-2. `ci-pipeline` - GitHub Actions for testing & building
-3. Hosting strategy (AWS, Heroku, custom VPS)
-4. Client hosting (Netlify, Vercel, or same server)
-
----
-
-## Development Checklist
-
-### Before Starting
-- [ ] Clone repository
-- [ ] Read `SETUP.md` and follow environment setup
-- [ ] Read `ARCHITECTURE.md` for system overview
-- [ ] Read `CONTRIBUTING.md` for code style
-
-### During Development
-- [ ] Create feature branch: `feature/task-name`
-- [ ] Update corresponding todo status: `UPDATE todos SET status = 'in_progress' WHERE id = '...'`
-- [ ] Follow code style guide (CONTRIBUTING.md)
-- [ ] Write tests as you go
-- [ ] Commit with descriptive messages
-
-### Before Submitting PR
-- [ ] Tests pass locally
-- [ ] Code follows style guide
-- [ ] No console.log() or debug code
-- [ ] Documentation updated
-- [ ] Update todo status: `UPDATE todos SET status = 'done' WHERE id = '...'`
-
----
-
-## How to View Task Progress
-
-### See all pending tasks
-```sql
-SELECT id, title FROM todos WHERE status = 'pending' ORDER BY id;
+```
+Initializing Droid-Clash Server...
+WebSocket server listening on port 8080
 ```
 
-### See ready tasks (dependencies met)
-```sql
-SELECT t.id, t.title FROM todos t
-WHERE t.status = 'pending'
-AND NOT EXISTS (
-  SELECT 1 FROM todo_deps td
-  JOIN todos dep ON td.depends_on = dep.id
-  WHERE td.todo_id = t.id AND dep.status != 'done'
-)
-ORDER BY t.id;
+### Browser Client
+```bash
+cd browser-client
+npm install
+npm run dev
+# → http://localhost:5173
 ```
 
-### See all in-progress tasks
-```sql
-SELECT id, title FROM todos WHERE status = 'in_progress' ORDER BY id;
-```
-
-### Mark task as done
-```sql
-UPDATE todos SET status = 'done' WHERE id = 'task-id';
-```
+> **Local-only**: set `VITE_WS_URL=ws://localhost:8080` before `npm run dev`.  
+> **LAN**: the dev default is `ws://192.168.1.32:8080` — change the IP in `websocket.js` or use the env var.
 
 ---
 
-## Key Technologies
+## Playing
 
-| Component | Tech | Purpose |
-|-----------|------|---------|
-| Server | Godot 4.2 + GDScript | Game loop, WebSocket, entities |
-| Client | Vue 3 + Vite | Browser UI, state management |
-| State Mgmt | Pinia | Reactive state in Vue |
-| Styling | Tailwind CSS | Mobile-first responsive design |
-| Network | WebSocket | Real-time bidirectional communication |
-| Build | Vite | Fast dev server, optimized bundles |
+1. Open `http://localhost:5173` on each player's device
+2. Enter a name → **Join**
+3. Click **Ready** — game starts when all players are ready
+4. Each turn: select 3 cards from your 6-card hand, in the order you want them executed
+5. Click **Submit Turn** — wait for all players, then watch the board
+6. Last robot alive wins
 
 ---
 
-## Quick Commands
+## Game Rules Summary
+
+| Rule | Detail |
+|------|--------|
+| Players | 2 – 8 |
+| Board | Hexagonal, radius 4, 61 tiles |
+| Hand size | 6 cards per turn |
+| Cards to play | Pick exactly 3, in order |
+| Deck | 13 cards (5 Move · 3 Turn Left · 3 Turn Right · 2 Attack) |
+| Execution | All players' cards resolve in randomised player order |
+| Attack | Hits robot directly ahead, 15 damage flat |
+| Starting health | 100 HP |
+| Win | Last robot standing |
+
+---
+
+## Card Types
+
+| Type ID | Name | Icon | Effect |
+|---------|------|------|--------|
+| 1 | Move Forward | 🔼 | Move one hex in facing direction |
+| 2 | Turn Left | ↶ | Rotate 60° counter-clockwise |
+| 3 | Turn Right | ↷ | Rotate 60° clockwise |
+| 4 | Attack | 💥 | Deal 15 damage to robot directly ahead |
+
+---
+
+## Common Commands
 
 ```bash
-# Godot
-# Open in editor (interactive)
-godot --path .
+# Start Vue dev server
+cd browser-client && npm run dev
 
-# Run headless (for testing)
+# Production build
+cd browser-client && npm run build
+
+# Godot headless server (no display)
 godot --headless --path .
-
-# Vue dev server
-cd browser-client
-npm run dev
-
-# Build Vue
-npm run build
-
-# Run tests
-npm run test
 ```
 
 ---
 
-## Important URLs (Local Dev)
+## Troubleshooting
 
-- **Godot Server**: runs locally, no URL (command line)
-- **Vue Dev Server**: http://localhost:5173
-- **WebSocket**: ws://localhost:8080
-- **Mobile Testing**: http://YOUR_IP:5173
+| Problem | Fix |
+|---------|-----|
+| WebSocket connection fails | Confirm Godot is running; check `lsof -i :8080` |
+| Wrong IP in client | Set `VITE_WS_URL=ws://localhost:8080` or edit `websocket.js` |
+| Cards not executing | All alive players must submit; check Godot console |
+| `npm run dev` fails | Run `npm install` in `browser-client/` first |
 
 ---
 
-## Questions? See These Files
+## Key Files
 
-| Question | See File |
-|----------|----------|
-| How do I set up the project? | `SETUP.md` |
-| How does the system work? | `ARCHITECTURE.md` |
-| What messages can I send? | `API.md` |
-| What code style should I use? | `CONTRIBUTING.md` |
-| What should I build next? | This file + SQL todo table |
-| What's the overall plan? | `plan.md` |
+| File | What it does |
+|------|-------------|
+| `src/main.gd` | Server entry point |
+| `src/server/message_handler.gd` | WS message routing & validation |
+| `src/game/game_manager.gd` | State machine, player management |
+| `src/entities/cards/card_registry.gd` | Card factory, deck composition |
+| `browser-client/src/api/websocket.js` | Client WS connection |
+| `docs/API.md` | Full message protocol |
+| `docs/ARCHITECTURE.md` | System design |
 

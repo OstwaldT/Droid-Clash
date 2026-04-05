@@ -1,102 +1,132 @@
 # Droid-Clash
 
-A multiplayer browser-based party game where players control robots/tanks on a hexagonal grid through card-based programming.
+A multiplayer party game where players control robots on a hexagonal grid using card-based programming. The Godot server runs the game and renders a 3D display; players join from their browser and submit cards each turn.
 
 ## Quick Start
 
 ### Prerequisites
 - Godot 4.2+
-- Node.js 18+ (for Vue 3 client)
-- Git
+- Node.js 18+
 
-### Setup
+### 1. Start the Godot Server
+Open this project in Godot 4.2+ and press Play (F5). The 3D board appears in the game window.
 
-1. **Godot Server**
-   ```bash
-   # Open this folder in Godot 4.2
-   # The server will run on localhost:8080 (WebSocket)
-   ```
+```
+Initializing Droid-Clash Server...
+WebSocket server listening on port 8080
+Server initialized and ready for connections
+```
 
-2. **Browser Client**
-   ```bash
-   cd browser-client
-   npm install
-   npm run dev
-   # Client runs on http://localhost:5173
-   ```
+### 2. Start the Browser Client
+```bash
+cd browser-client
+npm install
+npm run dev
+# → http://localhost:5173
+```
 
-3. **Connect**
-   - Open browser to `http://localhost:5173`
-   - Enter player name
-   - Godot server will send `ws://localhost:8080` connection
+> **LAN play**: By default the client connects to `ws://192.168.1.32:8080` in dev mode.  
+> For local-only testing set `VITE_WS_URL=ws://localhost:8080` before starting Vite.
+
+### 3. Join & Play
+- Open `http://localhost:5173` on each player's device
+- Enter a name and click **Join**
+- All players click **Ready** — game starts automatically when everyone is ready
+- Each turn: select 3 cards in order, click **Submit Turn**
+- Last robot standing wins
+
+---
 
 ## Game Rules
 
-- **2-8 Players**: Each player controls one robot
-- **Turn-Based**: Each turn, select 3 instruction cards
-- **Instructions**: Move forward, turn left, turn right, attack
-- **Win Condition**: Last robot standing wins
-- **Hexagonal Grid**: 10x10 grid for movement & combat
+| Rule | Detail |
+|------|--------|
+| Players | 2 – 8 |
+| Board | Regular hexagonal grid, radius 4 (61 tiles) |
+| Turn | Each player selects 3 cards from their 6-card hand |
+| Deck | 13 cards per player (5× Move, 3× Turn Left, 3× Turn Right, 2× Attack) |
+| Execution | Cards play out sequentially in randomised player order |
+| Win | Last robot alive wins |
+| Damage | Attack deals 15 HP; robots start at 100 HP |
+
+---
 
 ## Project Structure
 
 ```
 Droid-Clash/
-├── godot/                    # Godot 4.2 server code
+├── src/
+│   ├── main.gd                       # Server entry point & scene wiring
+│   ├── server/
+│   │   ├── websocket_server.gd       # WebSocket listener (port 8080)
+│   │   └── message_handler.gd        # Message routing & validation
+│   ├── game/
+│   │   ├── game_manager.gd           # State machine, player management
+│   │   └── turn_manager.gd           # Round execution pipeline
+│   ├── entities/
+│   │   ├── hexgrid.gd                # Axial hex grid, pathfinding
+│   │   ├── robot.gd                  # Robot state & movement
+│   │   ├── deck.gd                   # Per-player shuffled deck
+│   │   └── cards/
+│   │       ├── card_base.gd          # Base class (type IDs, execute interface)
+│   │       ├── card_move.gd          # Move Forward
+│   │       ├── card_turn_left.gd     # Turn Left
+│   │       ├── card_turn_right.gd    # Turn Right
+│   │       ├── card_attack.gd        # Attack
+│   │       └── card_registry.gd      # Factory + deck composition
+│   └── ui/
+│       ├── game_board_3d.gd          # 3D hex board & robot visuals
+│       ├── robot_visual.gd           # Per-robot 3D node + animations
+│       ├── lobby_panel.gd            # Lobby overlay (2D CanvasLayer)
+│       ├── player_status_hud.gd      # In-game HUD (Selecting/Submitted/Acting)
+│       └── server_status_panel.gd    # Debug info overlay
+├── scenes/
+│   └── main.tscn
+├── browser-client/
 │   ├── src/
-│   │   ├── server/          # WebSocket server implementation
-│   │   ├── game/            # Game logic & state
-│   │   └── entities/        # Robot, hexgrid, etc.
-│   └── scenes/
-├── browser-client/          # Vue 3 browser client
-│   ├── src/
-│   │   ├── components/      # Vue components
-│   │   ├── stores/          # Pinia state management
-│   │   └── api/             # WebSocket client
+│   │   ├── App.vue
+│   │   ├── api/websocket.js          # WS client + message handlers
+│   │   ├── stores/
+│   │   │   ├── gameStore.js          # Phase, robots, cards, player statuses
+│   │   │   └── playerStore.js        # Identity, color, connection state
+│   │   └── components/
+│   │       ├── LobbyScreen.vue       # Name entry, player list, ready button
+│   │       ├── CardSelection.vue     # 6-card hand, select 3, submit
+│   │       ├── HexBoard.vue          # SVG hex grid (client-side view)
+│   │       └── GameOverScreen.vue    # Winner display
 │   └── package.json
-└── docs/                    # Documentation
+└── docs/
+    ├── API.md          # WebSocket message reference
+    ├── ARCHITECTURE.md # System design & data flow
+    └── SETUP.md        # Detailed environment setup
 ```
+
+---
+
+## Documentation
+
+- **[docs/SETUP.md](docs/SETUP.md)** — Environment setup & troubleshooting
+- **[docs/API.md](docs/API.md)** — WebSocket message protocol (complete reference)
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — System design & data flow
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Code style guide
+
+---
 
 ## Development
 
 ### Code Style
-- **Godot**: GDScript (use existing Godot conventions)
-- **Vue**: Composition API, script setup syntax
-- **Formatting**: Prettier (Vue), GDScript linter in editor
+- **GDScript**: typed signals and variables, snake_case, no `var x := dict[key]` on Variant returns
+- **Vue**: Composition API with `<script setup>`, Pinia stores, Tailwind CSS inline styles for dynamic colors
+- **Commits**: descriptive messages; include `Co-authored-by` trailer
 
-### Running Tests
-```bash
-# Godot tests
-godot --headless --test
+### Adding a New Card Type
+1. Create `src/entities/cards/card_yourcard.gd` extending `Card`
+2. Add it to `CardRegistry.create()` match statement
+3. Add its composition count to `CardRegistry.COMPOSITION`
+4. No other files need changing
 
-# Vue tests
-cd browser-client
-npm run test
-```
-
-### Building for Production
-```bash
-# Godot export
-godot --export-release Linux build/server
-
-# Vue build
-cd browser-client
-npm run build
-```
-
-## Documentation
-
-- **[SETUP.md](docs/SETUP.md)** - Detailed environment setup
-- **[API.md](docs/API.md)** - WebSocket message protocol
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design & data flow
-
-## Contributing
-
-1. Create feature branch from `main`
-2. Follow code style guides (see above)
-3. Test locally before pushing
-4. Submit PR with description
+---
 
 ## License
 
-MIT (update as needed)
+MIT

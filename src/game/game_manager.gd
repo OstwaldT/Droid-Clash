@@ -79,7 +79,7 @@ func remove_player(player_id: int) -> void:
 			end_game()
 
 func start_game() -> void:
-	if phase != GamePhase.LOBBY or players.size() < 2:
+	if phase != GamePhase.LOBBY or players.size() < 1:
 		return
 	
 	phase = GamePhase.PLAYING
