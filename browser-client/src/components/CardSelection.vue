@@ -34,17 +34,19 @@
 
 <script setup>
 import { useGameStore } from '@/stores/gameStore'
+import { usePlayerStore } from '@/stores/playerStore'
 import websocket from '@/api/websocket'
 
 const gameStore = useGameStore()
+const playerStore = usePlayerStore()
 
 const submitTurn = () => {
-  if (!gameStore.canSubmitTurn.value) return
+  if (!gameStore.canSubmitTurn) return
 
   websocket.send({
     type: 'turn_submit',
     data: {
-      playerId: usePlayerStore().playerId,
+      playerId: playerStore.playerId,
       turnNumber: gameStore.turnNumber,
       cardIds: gameStore.selectedCards.map(c => c.id),
     },
