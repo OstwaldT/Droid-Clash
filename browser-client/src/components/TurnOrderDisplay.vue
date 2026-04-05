@@ -1,7 +1,5 @@
 <template>
-  <div v-if="orderedRobots.length > 0" class="turn-order flex items-center gap-1.5 px-3 py-2 rounded-lg">
-    <span class="text-xs font-semibold uppercase tracking-widest text-gray-400 mr-1 whitespace-nowrap">Act order</span>
-
+  <div v-if="orderedRobots.length > 0" class="turn-order flex justify-center items-center gap-1.5 px-3 py-2 rounded-lg">
     <template v-for="(robot, index) in orderedRobots" :key="robot.playerId">
       <!-- Arrow between entries -->
       <span v-if="index > 0" class="text-gray-500 text-xs select-none">›</span>
