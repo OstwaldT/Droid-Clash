@@ -221,8 +221,33 @@ func flash_hit() -> void:
 	var tween := create_tween()
 	tween.tween_property(mat, "albedo_color", original, 0.40)
 
-## Grey out and stop the robot visually when it dies.
-func mark_dead() -> void:
+## Animate the robot sliding off the edge and plummeting, then hide it.
+## edge_pos is the world position of the off-grid tile it stepped onto.
+func fall_off(edge_pos: Vector3) -> void:
+	if _is_dead:
+		return
+	_is_dead = true
+
+	# Slide quickly to the edge
+	var slide := create_tween()
+	slide.set_ease(Tween.EASE_IN)
+	slide.set_trans(Tween.TRANS_QUAD)
+	slide.tween_property(self, "position", edge_pos, 0.30)
+	await slide.finished
+
+	# Plummet: drop, spin, and shrink simultaneously
+	var fall := create_tween()
+	fall.set_parallel(true)
+	fall.set_ease(Tween.EASE_IN)
+	fall.set_trans(Tween.TRANS_QUAD)
+	fall.tween_property(self, "position:y", position.y - 6.0, 0.70)
+	fall.tween_property(self, "rotation:y",  rotation.y + TAU * 1.5, 0.70)
+	fall.tween_property(self, "scale", Vector3(0.1, 0.1, 0.1), 0.65)
+	await fall.finished
+
+	visible = false
+	if _is_dead:
+		return
 	_is_dead = true
 	var grey := Color(0.28, 0.28, 0.28)
 	(_body_mesh.material_override as StandardMaterial3D).albedo_color = grey

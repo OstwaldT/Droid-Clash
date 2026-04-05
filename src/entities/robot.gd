@@ -18,13 +18,18 @@ func _init(pid: int, pname: String, start_pos: Vector2i, pcolor: String = "#ffff
 	color = pcolor
 	health = max_health
 
-## Execute a move instruction
-func move_forward(grid: HexGrid) -> bool:
+## Execute a move instruction.
+## Returns "moved", "blocked", or "fell" (stepped off the grid).
+func move_forward(grid: HexGrid) -> String:
 	var next_pos = grid.get_neighbor_in_direction(position, direction)
+	if not grid.is_valid(next_pos):
+		# Robot walked off the edge — instant death
+		take_damage(max_health)
+		return "fell"
 	if grid.is_walkable(next_pos):
 		position = next_pos
-		return true
-	return false
+		return "moved"
+	return "blocked"
 
 ## Turn left (counter-clockwise)
 func turn_left() -> void:

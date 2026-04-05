@@ -10,14 +10,31 @@ func _init() -> void:
 
 func execute(robot: Robot, grid: HexGrid, _all_robots: Dictionary) -> Dictionary:
 	var from_pos := robot.position
-	var success  := robot.move_forward(grid)
-	var result   := {"type": type_id, "success": success}
+	var move_result := robot.move_forward(grid)
 
-	if success:
-		result["message"] = "Moved forward"
-		result["from"]    = from_pos
-		result["to"]      = robot.position
-	else:
-		result["message"] = "Blocked — cannot move"
-
-	return result
+	match move_result:
+		"moved":
+			return {
+				"type":    type_id,
+				"success": true,
+				"message": "Moved forward",
+				"from":    from_pos,
+				"to":      robot.position,
+			}
+		"fell":
+			# Robot stepped off the grid — record the off-grid tile it fell onto
+			var fell_pos := grid.get_neighbor_in_direction(from_pos, robot.direction)
+			return {
+				"type":    type_id,
+				"success": false,
+				"fell":    true,
+				"message": "Fell off the grid",
+				"from":    from_pos,
+				"fell_to": fell_pos,
+			}
+		_:  # "blocked"
+			return {
+				"type":    type_id,
+				"success": false,
+				"message": "Blocked — cannot move",
+			}

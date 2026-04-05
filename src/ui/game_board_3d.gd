@@ -108,6 +108,7 @@ func _on_turn_executed(events: Array) -> void:
 	const TURN_STEP    := 0.45   # rotation tween (0.28s) + gap
 	const ATTACK_STEP  := 0.55   # flash duration + gap
 	const BLOCKED_STEP := 0.35   # bump anim + gap
+	const FALL_STEP    := 1.10   # slide (0.30s) + plummet (0.70s) + gap
 
 	for event in events:
 		var pid: int = event.get("playerId", -1)
@@ -118,7 +119,13 @@ func _on_turn_executed(events: Array) -> void:
 		match int(event.get("type", -1)):
 
 			Card.TYPE_MOVE:
-				if event.get("success", false):
+				if event.get("fell", false):
+					var fell_to: Vector2i = event.get("fell_to", Vector2i.ZERO)
+					var edge_world := hex_to_world(fell_to.x, fell_to.y)
+					edge_world.y = HEX_HEIGHT
+					visual.fall_off(edge_world)
+					await get_tree().create_timer(FALL_STEP).timeout
+				elif event.get("success", false):
 					var to: Vector2i = event.get("to", Vector2i.ZERO)
 					visual.move_to(hex_to_robot_pos(to.x, to.y))
 					await get_tree().create_timer(MOVE_STEP).timeout
