@@ -301,7 +301,10 @@ func _send_hand_update(player_id: int) -> void:
 	ws_server.send_to_player(client_id, {
 		"type": "hand_update",
 		"timestamp": Time.get_ticks_msec(),
-		"data": {"hand": game_manager.get_player_hand_data(player_id)}
+		"data": {
+			"hand":    game_manager.get_player_hand_data(player_id),
+			"counts":  game_manager.get_player_deck_counts(player_id),
+		}
 	})
 
 ## Build a status array for all connected players.

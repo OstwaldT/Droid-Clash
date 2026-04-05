@@ -31,6 +31,15 @@ export const useGameStore = defineStore('game', () => {
   // Countdown value (3/2/1) shown in the lobby before a game starts; null = no countdown
   const countdown = ref(null)
 
+  // Deck pile counts (updated each hand_update)
+  const drawCount = ref(0)
+  const discardCount = ref(0)
+
+  // Cards being animated to the discard pile at end of round (snapshot of selectedCards)
+  const discardingCards = ref([])
+  // Unselected hand cards also flying to discard (snapshot of availableCards minus selected)
+  const discardingHandCards = ref([])
+
   // Actions
   const setGameState = (state) => {
     gameId.value = state.gameId
@@ -42,8 +51,12 @@ export const useGameStore = defineStore('game', () => {
     robots.value = state.robots
   }
 
-  const setAvailableCards = (cards) => {
+  const setAvailableCards = (cards, counts = null) => {
     availableCards.value = cards
+    if (counts) {
+      drawCount.value = counts.draw ?? 0
+      discardCount.value = counts.discard ?? 0
+    }
   }
 
   const selectCard = (cardId) => {
@@ -78,6 +91,26 @@ export const useGameStore = defineStore('game', () => {
     turnSubmitted.value = false
   }
 
+  // Snapshot selectedCards so CardSelection can animate them out.
+  // If there's nothing to animate, resets immediately.
+  const snapshotDiscardCards = () => {
+    if (selectedCards.value.length === 0) {
+      turnSubmitted.value = false
+      return
+    }
+    discardingCards.value = [...selectedCards.value]
+    const selectedIds = new Set(selectedCards.value.map(c => c.id))
+    discardingHandCards.value = availableCards.value.filter(c => !selectedIds.has(c.id))
+  }
+
+  // Called by CardSelection after the discard animation completes.
+  const finishDiscard = () => {
+    discardingCards.value = []
+    discardingHandCards.value = []
+    selectedCards.value = []
+    turnSubmitted.value = false
+  }
+
   const reset = () => {
     gameId.value = null
     phase.value = 'lobby'
@@ -91,6 +124,10 @@ export const useGameStore = defineStore('game', () => {
     turnOrder.value = []
     rematchPlayers.value = []
     countdown.value = null
+    drawCount.value = 0
+    discardCount.value = 0
+    discardingCards.value = []
+    discardingHandCards.value = []
   }
 
   const setTurnSubmitted = (val) => {
@@ -137,6 +174,12 @@ export const useGameStore = defineStore('game', () => {
     turnOrder,
     rematchPlayers,
     countdown,
+    drawCount,
+    discardCount,
+    discardingCards,
+    discardingHandCards,
+    snapshotDiscardCards,
+    finishDiscard,
     setGameState,
     setAvailableCards,
     setTurnSubmitted,

@@ -5,7 +5,7 @@ class_name CardTurnRight
 func _init() -> void:
 	type_id     = TYPE_TURN_RIGHT
 	card_name   = "Turn Right"
-	icon        = "↷"
+	icon        = "↻"
 	description = "Rotate your robot 60° clockwise."
 
 func execute(robot: Robot, _grid: HexGrid, _all_robots: Dictionary) -> Dictionary:

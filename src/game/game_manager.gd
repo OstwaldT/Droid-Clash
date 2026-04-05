@@ -158,6 +158,13 @@ func get_player_hand_data(player_id: int) -> Array:
 	var deck: Deck = player_decks.get(player_id)
 	return deck.hand_to_array() if deck else []
 
+## Draw pile and discard pile counts for the HUD.
+func get_player_deck_counts(player_id: int) -> Dictionary:
+	var deck: Deck = player_decks.get(player_id)
+	if not deck:
+		return {"draw": 0, "discard": 0}
+	return {"draw": deck.get_draw_pile_size(), "discard": deck.get_discard_pile_size()}
+
 ## Resolve the played hand (discard played cards, return unchosen ones),
 ## then draw a fresh hand. Call this after turn_manager.execute_round().
 func resolve_and_redraw_player_hand(player_id: int) -> Array:

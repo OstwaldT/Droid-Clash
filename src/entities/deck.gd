@@ -6,7 +6,7 @@ class_name Deck
 ## Each card in the deck is identified by a unique instance ID so that
 ## duplicate card types in the same hand can be told apart.
 
-const HAND_SIZE := 6
+const HAND_SIZE := 9
 
 var _draw_pile:    Array = []   # Array of type_id ints
 var _discard_pile: Array = []   # Array of type_id ints
@@ -75,6 +75,14 @@ func get_hand_instance_ids() -> Array:
 	for card in _current_hand:
 		ids.append(card["instance_id"])
 	return ids
+
+## Returns the number of cards remaining in the draw pile.
+func get_draw_pile_size() -> int:
+	return _draw_pile.size()
+
+## Returns the number of cards in the discard pile.
+func get_discard_pile_size() -> int:
+	return _discard_pile.size()
 
 ## Serialise the current hand for network transmission.
 func hand_to_array() -> Array:

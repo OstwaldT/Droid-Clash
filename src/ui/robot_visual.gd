@@ -137,12 +137,12 @@ func _build_label(pname: String) -> void:
 # --- Public API ---
 
 ## Smoothly move the robot to a new world position.
-func move_to(world_pos: Vector3, animate: bool = true) -> void:
+func move_to(world_pos: Vector3, animate: bool = true, duration: float = 0.75) -> void:
 	if animate and not _is_dead:
 		var tween = create_tween()
 		tween.set_ease(Tween.EASE_IN_OUT)
 		tween.set_trans(Tween.TRANS_CUBIC)
-		tween.tween_property(self, "position", world_pos, 0.75)
+		tween.tween_property(self, "position", world_pos, duration)
 	else:
 		position = world_pos
 
@@ -287,6 +287,61 @@ func revive() -> void:
 	barrel_mat.metallic     = 0.8
 	# Restore name label
 	_name_label.modulate = Color.WHITE
+
+## Fire a small rocket toward [target_world_pos]. The projectile flies and
+## detonates a spark burst on arrival. Non-blocking — caller awaits a timer.
+func shoot_rocket(target_world_pos: Vector3) -> void:
+	var rocket := MeshInstance3D.new()
+	var rmesh  := SphereMesh.new()
+	rmesh.radius = 0.08
+	rmesh.height = 0.16
+	rocket.mesh = rmesh
+	var rmat := StandardMaterial3D.new()
+	rmat.albedo_color               = Color(1.0, 0.65, 0.1)
+	rmat.emission_enabled           = true
+	rmat.emission                   = Color(1.0, 0.4, 0.0)
+	rmat.emission_energy_multiplier = 3.0
+	rocket.material_override = rmat
+
+	# Start at barrel tip in parent (GameBoard3D) space
+	var fwd_dir := Vector3(sin(rotation.y), 0.0, cos(rotation.y))
+	rocket.position = position + fwd_dir * 0.75 + Vector3(0.0, 0.93, 0.0)
+	get_parent().add_child(rocket)
+
+	# Fly to impact point at tile-surface height (0.15)
+	var dest := target_world_pos + Vector3(0.0, 0.15, 0.0)
+	var fly := rocket.create_tween()
+	fly.set_ease(Tween.EASE_IN)
+	fly.set_trans(Tween.TRANS_QUAD)
+	fly.tween_property(rocket, "position", dest, 0.35)
+	await fly.finished
+
+	# Spark burst at impact
+	for i in range(6):
+		var spark := MeshInstance3D.new()
+		var smesh := SphereMesh.new()
+		smesh.radius = randf_range(0.04, 0.10)
+		smesh.height = smesh.radius * 2.0
+		spark.mesh = smesh
+		var smat := StandardMaterial3D.new()
+		smat.albedo_color     = Color(1.0, randf_range(0.3, 0.7), 0.0)
+		smat.emission_enabled = true
+		smat.emission         = smat.albedo_color
+		spark.material_override = smat
+		spark.position = rocket.position
+		get_parent().add_child(spark)
+
+		var angle := TAU * float(i) / 6.0 + randf_range(-0.3, 0.3)
+		var spread := randf_range(0.2, 0.55)
+		var peak   := randf_range(0.15, 0.50)
+		var spark_dest := spark.position + Vector3(sin(angle) * spread, peak, cos(angle) * spread)
+		var st := spark.create_tween()
+		st.set_parallel(true)
+		st.tween_property(spark, "position", spark_dest, 0.30)
+		st.tween_property(spark, "scale", Vector3.ZERO, 0.25)
+		get_tree().create_timer(0.35).timeout.connect(spark.queue_free)
+
+	rocket.queue_free()
 
 ## Explosion death: flash orange, scatter debris, shrink robot to nothing.
 func explode() -> void:

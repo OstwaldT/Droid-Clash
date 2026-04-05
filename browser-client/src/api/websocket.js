@@ -158,6 +158,8 @@ class WebSocketClient {
   }
 
   handleConnect(data) {
+    const gameStore = useGameStore();
+    gameStore.reset();  // Clear any stale state from a previous game
     const playerStore = usePlayerStore();
     playerStore.setPlayer(data.playerId, playerStore.playerName);
     if (data.color) playerStore.setColor(data.color);
@@ -192,7 +194,7 @@ class WebSocketClient {
 
   handleHandUpdate(data) {
     const gameStore = useGameStore();
-    gameStore.setAvailableCards(data.hand);
+    gameStore.setAvailableCards(data.hand, data.counts ?? null);
   }
 
   handleGameStateUpdate(data) {
@@ -211,16 +213,19 @@ class WebSocketClient {
   }
 
   // Called when the server signals that all board animations have finished.
-  // Now it's safe to switch phase and let players act.
+  // Snapshots selected cards so CardSelection can animate them to the discard pile,
+  // then deal the new hand. Safety fallback fires after 2s if component doesn't respond.
   handleRoundReady() {
     const gameStore = useGameStore();
     if (this.pendingPhase) {
       gameStore.phase = this.pendingPhase;
       this.pendingPhase = null;
     }
-    // Reset selection state — availableCards already holds the new hand
-    // received via hand_update before game_state_update arrived.
-    gameStore.resetRoundState();
+    gameStore.snapshotDiscardCards();
+    // Fallback: if the component doesn't call finishDiscard within 2s, force it
+    setTimeout(() => {
+      if (gameStore.discardingCards.length > 0) gameStore.finishDiscard();
+    }, 2000);
   }
 
   handlePlayerStatusesUpdate(data) {

@@ -248,8 +248,46 @@ func _on_turn_executed(events: Array) -> void:
 					visual.bump_blocked()
 					await get_tree().create_timer(BLOCKED_STEP).timeout
 
+			Card.TYPE_RUSH:
+				var steps: Array = event.get("steps", [])
+				var s0: Dictionary = steps[0] if steps.size() > 0 else {}
+				var s1: Dictionary = steps[1] if steps.size() > 1 else {}
+
+				if s0.get("success", false) and s1.get("success", false):
+					# Both hexes clear — one smooth glide over 2 hexes
+					var final_to: Vector2i = s1.get("to", Vector2i.ZERO)
+					visual.move_to(hex_to_robot_pos(final_to.x, final_to.y), true, 1.10)
+					await get_tree().create_timer(1.20).timeout
+				elif s0.get("success", false) and s1.get("fell", false):
+					# First hex clear, second is a hole — glide smoothly to the edge then fall
+					var fell_to: Vector2i = s1.get("fell_to", Vector2i.ZERO)
+					var edge_world := hex_to_world(fell_to.x, fell_to.y)
+					edge_world.y = HEX_HEIGHT
+					visual.move_to(edge_world, true, 1.10)
+					await get_tree().create_timer(1.10).timeout
+					visual.fall_off(edge_world)
+					await get_tree().create_timer(FALL_STEP).timeout
+				else:
+					# Partial or no movement — animate step by step
+					if s0.get("fell", false):
+						var fell_to: Vector2i = s0.get("fell_to", Vector2i.ZERO)
+						var edge_world := hex_to_world(fell_to.x, fell_to.y)
+						edge_world.y = HEX_HEIGHT
+						visual.fall_off(edge_world)
+						await get_tree().create_timer(FALL_STEP).timeout
+					elif s0.get("success", false):
+						var to: Vector2i = s0.get("to", Vector2i.ZERO)
+						visual.move_to(hex_to_robot_pos(to.x, to.y))
+						await get_tree().create_timer(MOVE_STEP).timeout
+						visual.bump_blocked()
+						await get_tree().create_timer(BLOCKED_STEP).timeout
+					else:
+						visual.bump_blocked()
+						await get_tree().create_timer(BLOCKED_STEP).timeout
+
 			Card.TYPE_TURN_LEFT, \
-			Card.TYPE_TURN_RIGHT:
+			Card.TYPE_TURN_RIGHT, \
+			Card.TYPE_180:
 				visual.set_robot_direction(event.get("new_direction", 0), true)
 				await get_tree().create_timer(TURN_STEP).timeout
 
@@ -268,6 +306,24 @@ func _on_turn_executed(events: Array) -> void:
 							if target_robot:
 								target_visual.update_health(target_robot.health, target_robot.max_health)
 				await get_tree().create_timer(ATTACK_STEP).timeout
+
+			Card.TYPE_SHOOT:
+				var hit_pos: Vector2i = event.get("hit_pos", Vector2i.ZERO)
+				var target_world := hex_to_world(hit_pos.x, hit_pos.y)
+				visual.shoot_rocket(target_world)
+				await get_tree().create_timer(0.35).timeout  # rocket flight time
+				if event.get("success", false):
+					var target_id: int = event.get("target", -1)
+					var target_visual: RobotVisual = _robot_visuals.get(target_id)
+					if target_visual:
+						var target_robot: Robot = game_manager.robots.get(target_id)
+						if target_robot and not target_robot.is_alive():
+							target_visual.explode()
+						else:
+							target_visual.flash_hit()
+							if target_robot:
+								target_visual.update_health(target_robot.health, target_robot.max_health)
+				await get_tree().create_timer(0.50).timeout  # impact + gap
 
 	# Final sync: snap all visuals to authoritative post-round robot state
 	for player_id in game_manager.robots.keys():

@@ -10,6 +10,9 @@ const TYPE_MOVE       := 1
 const TYPE_TURN_LEFT  := 2
 const TYPE_TURN_RIGHT := 3
 const TYPE_ATTACK     := 4
+const TYPE_RUSH       := 5
+const TYPE_SHOOT      := 6
+const TYPE_180        := 7
 
 var type_id:     int    = 0
 var card_name:   String = ""
