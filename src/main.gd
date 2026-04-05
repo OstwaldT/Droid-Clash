@@ -10,6 +10,7 @@ var status_panel: ServerStatusPanel
 var game_board: GameBoard3D
 var lobby_panel: LobbyPanel
 var player_status_hud: PlayerStatusHUD
+var game_over_panel: GameOverPanel
 
 func _ready() -> void:
 	print("Initializing Droid-Clash Server...")
@@ -50,6 +51,11 @@ func _ready() -> void:
 	player_status_hud = PlayerStatusHUD.new()
 	add_child(player_status_hud)
 	player_status_hud.setup(game_manager, turn_manager)
+
+	# Game over overlay (hidden until game ends)
+	game_over_panel = GameOverPanel.new()
+	add_child(game_over_panel)
+	game_over_panel.setup(game_manager)
 
 	print("Server initialized and ready for connections")
 
