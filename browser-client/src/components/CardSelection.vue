@@ -116,7 +116,7 @@
         <div class="pile-stack pile-stack--draw" ref="drawPileRef">
           <span class="pile-count">{{ gameStore.drawCount }}</span>
         </div>
-        <div class="pile-stack pile-stack--discard" ref="discardPileRef">
+        <div class="pile-stack pile-stack--discard" ref="discardPileRef" :class="{ 'pile-shuffle': discardShuffling }">
           <span class="pile-count">{{ gameStore.discardCount }}</span>
         </div>
       </div>
@@ -150,6 +150,8 @@ const dealingSet = ref(new Set())   // card IDs hidden while their deal ghost is
 
 // Tracks the first card ID of the last dealt hand to avoid re-animating the same hand
 const dealtPhaseKey = ref(null)
+// CSS class toggled on discard pile during shuffle animation
+const discardShuffling = ref(false)
 
 const isTaken  = (id) => flyingIds.value.has(id) || gameStore.isCardSelected(id)
 const isFlying = (id) => id && flyingIds.value.has(id)
@@ -219,37 +221,33 @@ async function runDiscardAnimation(selectedCards, handCards) {
 }
 
 // ── Deal animation ─────────────────────────────────────────────────────────────
-async function runDealAnimation(cards) {
+
+// Fly a batch of cards from the draw pile to their grid positions.
+async function dealBatch(cards, startIndex) {
   if (!drawPileRef.value || !cards.length) return
-
-  dealingSet.value = new Set(cards.map(c => c.id))
-  await nextTick()
-
   const drawRect = drawPileRef.value.getBoundingClientRect()
   const drawCx   = drawRect.left + drawRect.width  / 2
   const drawCy   = drawRect.top  + drawRect.height / 2
 
   const ghosts = []
   for (let i = 0; i < cards.length; i++) {
-    const el = cardRefs.value[i]
+    const el = cardRefs.value[startIndex + i]
     if (!el) continue
     const cardRect = el.getBoundingClientRect()
-    const w = cardRect.width
-    const h = cardRect.height
+    const w = cardRect.width, h = cardRect.height
     ghosts.push({
-      id:       `deal-${Date.now()}-${i}`,
+      id:       `deal-${Date.now()}-${startIndex + i}`,
       icon:     cards[i].icon,
       cardId:   cards[i].id,
       w, h,
       left:     drawCx - w / 2,
       top:      drawCy - h / 2,
-      tx:       0,
-      ty:       0,
+      tx: 0, ty: 0,
       destLeft: cardRect.left,
       destTop:  cardRect.top,
     })
   }
-  if (!ghosts.length) { dealingSet.value = new Set(); return }
+  if (!ghosts.length) return
 
   flyCards.value = [...flyCards.value, ...ghosts]
   await nextTick()
@@ -259,7 +257,6 @@ async function runDealAnimation(cards) {
       setTimeout(() => {
         const g = flyCards.value.find(x => x.id === ghost.id)
         if (g) { g.tx = ghost.destLeft - ghost.left; g.ty = ghost.destTop - ghost.top }
-        // Reveal real card as ghost arrives
         setTimeout(() => {
           dealingSet.value = new Set([...dealingSet.value].filter(id => id !== ghost.cardId))
         }, 300)
@@ -267,10 +264,36 @@ async function runDealAnimation(cards) {
     })
     setTimeout(() => {
       flyCards.value = flyCards.value.filter(g => !ghosts.some(x => x.id === g.id))
-      dealingSet.value = new Set()
       resolve()
     }, ghosts.length * 75 + 380)
   })
+}
+
+// Shuffle animation on the discard pile, then "move" it to draw pile.
+async function runShuffleAnimation() {
+  discardShuffling.value = true
+  await new Promise(resolve => setTimeout(resolve, 650))
+  discardShuffling.value = false
+}
+
+async function runDealAnimation(cards) {
+  if (!cards.length) return
+  dealingSet.value = new Set(cards.map(c => c.id))
+  await nextTick()
+
+  const info = gameStore.shuffleInfo  // { cardsBeforeShuffle } or null
+  if (info) {
+    const splitAt = info.cardsBeforeShuffle
+    if (splitAt > 0) {
+      await dealBatch(cards.slice(0, splitAt), 0)
+    }
+    await runShuffleAnimation()
+    await dealBatch(cards.slice(splitAt), splitAt)
+  } else {
+    await dealBatch(cards, 0)
+  }
+
+  dealingSet.value = new Set()
 }
 
 // ── Watchers ──────────────────────────────────────────────────────────────────
@@ -516,6 +539,20 @@ const submitTurn = () => {
 .fly-card--batch {
   font-size: 1.8rem;
   transition: transform 0.30s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Shuffle animation on discard pile */
+@keyframes pile-shuffle {
+  0%   { transform: rotate(0deg)   scale(1);    }
+  15%  { transform: rotate(-12deg) scale(1.15); }
+  35%  { transform: rotate(10deg)  scale(1.15); }
+  55%  { transform: rotate(-7deg)  scale(1.08); }
+  75%  { transform: rotate(6deg)   scale(1.08); }
+  90%  { transform: rotate(-2deg)  scale(1.02); }
+  100% { transform: rotate(0deg)   scale(1);    }
+}
+.pile-shuffle {
+  animation: pile-shuffle 0.65s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 /* Slot pop-in */

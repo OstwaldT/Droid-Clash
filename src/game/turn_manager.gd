@@ -13,6 +13,10 @@ var card_submissions: Dictionary = {}  # player_id -> [instance_id, ...]
 ## After each round the first player is moved to the back.
 var _priority_order: Array = []
 
+## Set to a player_id the first time exactly one robot remains alive during a round.
+## Used by message_handler to declare a winner even if that robot later kills itself.
+var provisional_winner_id: int = -1
+
 func _init(manager: GameManager) -> void:
 	game_manager = manager
 	grid = manager.grid
@@ -51,11 +55,23 @@ func execute_round() -> Array:
 			players_to_execute.append(player_id)
 
 	# Execute each player's cards in sequence
+	provisional_winner_id = -1
+	var winner_locked := false
+
 	for player_id in players_to_execute:
+		# Once a winner is locked, skip all players except the winner
+		if winner_locked and player_id != provisional_winner_id:
+			continue
+
 		var instance_ids = card_submissions.get(player_id, [])
 		var robot = game_manager.robots[player_id]
-		
+
 		for instance_id in instance_ids:
+			# Skip remaining cards if this robot died and is NOT the locked winner.
+			# The winner continues executing (even unto death) so their cards are animated.
+			if not robot.is_alive() and not (winner_locked and player_id == provisional_winner_id):
+				break
+
 			var type_id := game_manager.get_card_type_id(player_id, instance_id)
 			if type_id == -1:
 				continue
@@ -69,6 +85,13 @@ func execute_round() -> Array:
 			var event := {"playerId": player_id, "instanceId": instance_id, "typeId": type_id}
 			event.merge(result)
 			events.append(event)
+
+			# Lock in provisional winner the first time exactly one robot remains alive
+			if provisional_winner_id == -1:
+				var alive_now := game_manager.get_alive_players()
+				if alive_now.size() == 1:
+					provisional_winner_id = alive_now[0]
+					winner_locked = true
 
 	# Rotate priority: first player this round goes last next round
 	if _priority_order.size() > 1:

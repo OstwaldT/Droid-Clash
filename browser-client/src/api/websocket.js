@@ -14,6 +14,8 @@ class WebSocketClient {
     this.messageHandlers = {};
     // Phase buffered from game_state_update; applied only when round_ready arrives
     this.pendingPhase = null;
+    // Hand buffered from hand_update mid-round; applied only when round_ready arrives
+    this.pendingHand = null;
   }
 
   connect() {
@@ -145,6 +147,9 @@ class WebSocketClient {
       case "round_ready":
         this.handleRoundReady();
         break;
+      case "game_over":
+        this.handleGameOver(data);
+        break;
       case "rematch_status":
         this.handleRematchStatus(data);
         break;
@@ -160,6 +165,8 @@ class WebSocketClient {
   handleConnect(data) {
     const gameStore = useGameStore();
     gameStore.reset();  // Clear any stale state from a previous game
+    this.pendingHand = null;
+    this.pendingPhase = null;
     const playerStore = usePlayerStore();
     playerStore.setPlayer(data.playerId, playerStore.playerName);
     if (data.color) playerStore.setColor(data.color);
@@ -194,7 +201,13 @@ class WebSocketClient {
 
   handleHandUpdate(data) {
     const gameStore = useGameStore();
-    gameStore.setAvailableCards(data.hand, data.counts ?? null);
+    // If the player has submitted their turn, animations are about to play —
+    // buffer the new hand and apply it only when round_ready fires.
+    if (gameStore.turnSubmitted) {
+      this.pendingHand = data;
+    } else {
+      gameStore.setAvailableCards(data.hand, data.counts ?? null);
+    }
   }
 
   handleGameStateUpdate(data) {
@@ -221,11 +234,22 @@ class WebSocketClient {
       gameStore.phase = this.pendingPhase;
       this.pendingPhase = null;
     }
+    if (this.pendingHand) {
+      gameStore.setAvailableCards(this.pendingHand.hand, this.pendingHand.counts ?? null);
+      this.pendingHand = null;
+    }
     gameStore.snapshotDiscardCards();
     // Fallback: if the component doesn't call finishDiscard within 2s, force it
     setTimeout(() => {
       if (gameStore.discardingCards.length > 0) gameStore.finishDiscard();
     }, 2000);
+  }
+
+  handleGameOver(data) {
+    const gameStore = useGameStore();
+    gameStore.winnerId   = data.winner     ?? null;
+    gameStore.winnerName = data.winnerName ?? null;
+    if (data.finalPlayers) gameStore.robots = data.finalPlayers;
   }
 
   handlePlayerStatusesUpdate(data) {

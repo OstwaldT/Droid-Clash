@@ -49,6 +49,7 @@ func _ready() -> void:
 	lobby_panel = LobbyPanel.new()
 	add_child(lobby_panel)
 	lobby_panel.setup(game_manager)
+	message_handler.countdown_tick.connect(lobby_panel.show_countdown)
 
 	# Player status HUD (top-right, visible during gameplay)
 	player_status_hud = PlayerStatusHUD.new()

@@ -4,15 +4,15 @@ class_name CardMove
 
 func _init() -> void:
 	type_id     = TYPE_MOVE
-	card_name   = "Move Forward"
+	card_name   = "March"
 	icon        = "🔼"
 	description = "Move your robot one hex in the direction it's facing."
 
 func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 	var from_pos := robot.position
-	var move_result := robot.move_forward(grid, all_robots)
+	var result := robot.move_forward(grid, all_robots, true)
 
-	match move_result:
+	match result["result"]:
 		"moved":
 			return {
 				"type":    type_id,
@@ -22,7 +22,6 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 				"to":      robot.position,
 			}
 		"fell":
-			# Robot stepped off the grid — record the off-grid tile it fell onto
 			var fell_pos := grid.get_neighbor_in_direction(from_pos, robot.direction)
 			return {
 				"type":    type_id,
@@ -31,6 +30,39 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 				"message": "Fell off the grid",
 				"from":    from_pos,
 				"fell_to": fell_pos,
+			}
+		"pushed":
+			return {
+				"type":        type_id,
+				"success":     true,
+				"message":     "Pushed a robot",
+				"from":        from_pos,
+				"to":          robot.position,
+				"pushed":      true,
+				"pushed_id":   result["pushed_id"],
+				"pushed_from": result["pushed_from"],
+				"pushed_to":   result["pushed_to"],
+			}
+		"pushed_off":
+			return {
+				"type":        type_id,
+				"success":     true,
+				"message":     "Pushed robot off the edge",
+				"from":        from_pos,
+				"to":          robot.position,
+				"pushed_off":  true,
+				"pushed_id":   result["pushed_id"],
+				"pushed_from": result["pushed_from"],
+				"pushed_to":   result["pushed_to"],
+			}
+		"slammed":
+			return {
+				"type":        type_id,
+				"success":     false,
+				"message":     "Slammed robot into obstacle",
+				"slammed":     true,
+				"slammed_id":  result["slammed_id"],
+				"slam_damage": result["slam_damage"],
 			}
 		_:  # "blocked"
 			return {

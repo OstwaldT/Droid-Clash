@@ -28,12 +28,17 @@ export const useGameStore = defineStore('game', () => {
   // Player IDs who have requested a rematch (shown on game-over screen)
   const rematchPlayers = ref([])
 
+  // Winner info set by game_over message
+  const winnerId   = ref(null)
+  const winnerName = ref(null)
+
   // Countdown value (3/2/1) shown in the lobby before a game starts; null = no countdown
   const countdown = ref(null)
 
   // Deck pile counts (updated each hand_update)
   const drawCount = ref(0)
   const discardCount = ref(0)
+  const shuffleInfo = ref(null)  // {shuffled, cardsBeforeShuffle} or null
 
   // Cards being animated to the discard pile at end of round (snapshot of selectedCards)
   const discardingCards = ref([])
@@ -56,6 +61,9 @@ export const useGameStore = defineStore('game', () => {
     if (counts) {
       drawCount.value = counts.draw ?? 0
       discardCount.value = counts.discard ?? 0
+      shuffleInfo.value = counts.shuffled
+        ? { cardsBeforeShuffle: counts.cardsBeforeShuffle ?? 0 }
+        : null
     }
   }
 
@@ -126,8 +134,11 @@ export const useGameStore = defineStore('game', () => {
     countdown.value = null
     drawCount.value = 0
     discardCount.value = 0
+    shuffleInfo.value = null
     discardingCards.value = []
     discardingHandCards.value = []
+    winnerId.value = null
+    winnerName.value = null
   }
 
   const setTurnSubmitted = (val) => {
@@ -178,6 +189,9 @@ export const useGameStore = defineStore('game', () => {
     discardCount,
     discardingCards,
     discardingHandCards,
+    winnerId,
+    winnerName,
+    shuffleInfo,
     snapshotDiscardCards,
     finishDiscard,
     setGameState,

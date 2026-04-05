@@ -240,6 +240,36 @@ func _on_turn_executed(events: Array) -> void:
 					edge_world.y = HEX_HEIGHT
 					visual.fall_off(edge_world)
 					await get_tree().create_timer(FALL_STEP).timeout
+				elif event.get("pushed_off", false):
+					# Pusher slides in; pushed robot falls off the edge simultaneously
+					var to: Vector2i         = event.get("to",          Vector2i.ZERO)
+					var pushed_to: Vector2i  = event.get("pushed_to",   Vector2i.ZERO)
+					var pushed_id: int       = event.get("pushed_id",   -1)
+					var pushed_visual: RobotVisual = _robot_visuals.get(pushed_id)
+					visual.move_to(hex_to_robot_pos(to.x, to.y))
+					if pushed_visual:
+						var edge_world := hex_to_world(pushed_to.x, pushed_to.y)
+						edge_world.y = HEX_HEIGHT
+						pushed_visual.fall_off(edge_world)
+					await get_tree().create_timer(FALL_STEP).timeout
+				elif event.get("pushed", false):
+					# Move both robots simultaneously
+					var to: Vector2i        = event.get("to",        Vector2i.ZERO)
+					var pushed_to: Vector2i = event.get("pushed_to", Vector2i.ZERO)
+					var pushed_id: int      = event.get("pushed_id", -1)
+					var pushed_visual: RobotVisual = _robot_visuals.get(pushed_id)
+					visual.move_to(hex_to_robot_pos(to.x, to.y))
+					if pushed_visual:
+						pushed_visual.move_to(hex_to_robot_pos(pushed_to.x, pushed_to.y))
+					await get_tree().create_timer(MOVE_STEP).timeout
+				elif event.get("slammed", false):
+					# Bump pusher, flash hit on slammed robot
+					visual.bump_blocked()
+					var slammed_id: int = event.get("slammed_id", -1)
+					var slammed_visual: RobotVisual = _robot_visuals.get(slammed_id)
+					if slammed_visual:
+						slammed_visual.flash_hit()
+					await get_tree().create_timer(BLOCKED_STEP).timeout
 				elif event.get("success", false):
 					var to: Vector2i = event.get("to", Vector2i.ZERO)
 					visual.move_to(hex_to_robot_pos(to.x, to.y))

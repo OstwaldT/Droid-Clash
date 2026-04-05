@@ -2,10 +2,10 @@ extends Node3D
 
 class_name RobotVisual
 
-const HEALTH_BAR_WIDTH: float = 0.8
-const HEALTH_BAR_DEPTH: float = 0.06
-const HEALTH_BAR_Y: float = 1.55
-const LABEL_Y: float = 1.9
+const LABEL_Y: float  = 1.9
+const HP_BAR_Y: float = 2.28
+const HP_BAR_W: float = 0.90
+const HP_BAR_H: float = 0.09
 
 var player_id: int
 var robot_color: Color
@@ -86,41 +86,33 @@ func _build_direction_indicator() -> void:
 	_direction_indicator.material_override = mat
 	add_child(_direction_indicator)
 
-func _build_health_bar(color: Color) -> void:
-	# Dark background bar
+func _build_health_bar(_color: Color) -> void:
+	# Dark background track
 	_hp_bar_bg = MeshInstance3D.new()
-	var bg_mesh = BoxMesh.new()
-	bg_mesh.size = Vector3(HEALTH_BAR_WIDTH, HEALTH_BAR_DEPTH, HEALTH_BAR_DEPTH)
+	var bg_mesh := QuadMesh.new()
+	bg_mesh.size = Vector2(HP_BAR_W + 0.06, HP_BAR_H + 0.04)
 	_hp_bar_bg.mesh = bg_mesh
-	_hp_bar_bg.position = Vector3(0.0, HEALTH_BAR_Y, 0.0)
-	var bg_mat = StandardMaterial3D.new()
-	bg_mat.albedo_color = Color(0.15, 0.15, 0.15)
+	_hp_bar_bg.position = Vector3(0.0, HP_BAR_Y, 0.0)
+	var bg_mat := StandardMaterial3D.new()
+	bg_mat.albedo_color   = Color(0.10, 0.10, 0.10)
+	bg_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	bg_mat.no_depth_test  = true
 	_hp_bar_bg.material_override = bg_mat
 	add_child(_hp_bar_bg)
 
-	# Coloured fill bar (rendered slightly in front of bg)
+	# Coloured fill — rendered on top via render_priority
 	_hp_bar_fill = MeshInstance3D.new()
-	var fill_mesh = BoxMesh.new()
-	fill_mesh.size = Vector3(HEALTH_BAR_WIDTH, HEALTH_BAR_DEPTH, HEALTH_BAR_DEPTH + 0.01)
+	var fill_mesh := QuadMesh.new()
+	fill_mesh.size = Vector2(HP_BAR_W, HP_BAR_H)
 	_hp_bar_fill.mesh = fill_mesh
-	_hp_bar_fill.position = Vector3(0.0, HEALTH_BAR_Y, 0.0)
-	var fill_mat = StandardMaterial3D.new()
-	fill_mat.albedo_color = Color(0.1, 0.85, 0.2)
-	fill_mat.emission_enabled = true
-	fill_mat.emission = Color(0.0, 0.3, 0.0)
+	_hp_bar_fill.position = Vector3(0.0, HP_BAR_Y, 0.0)
+	var fill_mat := StandardMaterial3D.new()
+	fill_mat.albedo_color   = Color(0.18, 0.88, 0.32)
+	fill_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	fill_mat.no_depth_test  = true
+	fill_mat.render_priority = 1
 	_hp_bar_fill.material_override = fill_mat
 	add_child(_hp_bar_fill)
-
-	# Thin colored outline matching robot color for identity
-	var outline = MeshInstance3D.new()
-	var out_mesh = BoxMesh.new()
-	out_mesh.size = Vector3(HEALTH_BAR_WIDTH + 0.04, HEALTH_BAR_DEPTH + 0.04, HEALTH_BAR_DEPTH * 0.5)
-	outline.mesh = out_mesh
-	outline.position = Vector3(0.0, HEALTH_BAR_Y, -HEALTH_BAR_DEPTH * 0.3)
-	var out_mat = StandardMaterial3D.new()
-	out_mat.albedo_color = color
-	outline.material_override = out_mat
-	add_child(outline)
 
 func _build_label(pname: String) -> void:
 	_name_label = Label3D.new()
@@ -146,31 +138,25 @@ func move_to(world_pos: Vector3, animate: bool = true, duration: float = 0.75) -
 	else:
 		position = world_pos
 
-## Update health bar appearance based on current / max HP.
+## Update the billboard health bar width and colour based on current / max HP.
 func update_health(hp: int, max_hp: int) -> void:
 	if max_hp <= 0:
 		return
-
 	var ratio: float = clampf(float(hp) / float(max_hp), 0.0, 1.0)
-	var fill_width: float = HEALTH_BAR_WIDTH * ratio
 
-	var fill_mesh := _hp_bar_fill.mesh as BoxMesh
-	fill_mesh.size = Vector3(fill_width, HEALTH_BAR_DEPTH, HEALTH_BAR_DEPTH + 0.01)
+	# Shrink fill and keep it left-aligned
+	var fill_mesh := _hp_bar_fill.mesh as QuadMesh
+	fill_mesh.size = Vector2(HP_BAR_W * ratio, HP_BAR_H)
+	_hp_bar_fill.position.x = HP_BAR_W * (ratio - 1.0) / 2.0
 
-	# Keep left edge pinned: center_x = -half_bg + half_fill
-	_hp_bar_fill.position.x = 0.4 * (ratio - 1.0)
-
-	# Green → yellow → red gradient
+	# Shift colour green → yellow → red
 	var fill_mat := _hp_bar_fill.material_override as StandardMaterial3D
 	if ratio > 0.6:
-		fill_mat.albedo_color = Color(0.1, 0.85, 0.2)
-		fill_mat.emission = Color(0.0, 0.3, 0.0)
+		fill_mat.albedo_color = Color(0.18, 0.88, 0.32)
 	elif ratio > 0.3:
-		fill_mat.albedo_color = Color(0.9, 0.8, 0.05)
-		fill_mat.emission = Color(0.2, 0.2, 0.0)
+		fill_mat.albedo_color = Color(0.90, 0.80, 0.05)
 	else:
-		fill_mat.albedo_color = Color(0.9, 0.15, 0.05)
-		fill_mat.emission = Color(0.3, 0.0, 0.0)
+		fill_mat.albedo_color = Color(0.90, 0.15, 0.05)
 
 ## Smoothly rotate to face a given hex direction.
 func set_robot_direction(dir: int, animate: bool = false) -> void:
@@ -269,6 +255,8 @@ func mark_dead() -> void:
 	barrel_mat.albedo_color = Color(0.3, 0.3, 0.3)
 	barrel_mat.metallic = 0.0
 	_name_label.modulate = Color(0.45, 0.45, 0.45)
+	(_hp_bar_fill.material_override as StandardMaterial3D).albedo_color = Color(0.30, 0.30, 0.30)
+	(_hp_bar_bg.material_override   as StandardMaterial3D).albedo_color = Color(0.08, 0.08, 0.08)
 
 ## Restore this robot to a fully alive visual state (called on rematch).
 func revive() -> void:
@@ -285,8 +273,10 @@ func revive() -> void:
 	var barrel_mat := _direction_indicator.material_override as StandardMaterial3D
 	barrel_mat.albedo_color = Color(0.78, 0.78, 0.78)
 	barrel_mat.metallic     = 0.8
-	# Restore name label
+	# Restore name and hp bar
 	_name_label.modulate = Color.WHITE
+	(_hp_bar_fill.material_override as StandardMaterial3D).albedo_color = Color(0.18, 0.88, 0.32)
+	(_hp_bar_bg.material_override   as StandardMaterial3D).albedo_color = Color(0.10, 0.10, 0.10)
 
 ## Fire a small rocket toward [target_world_pos]. The projectile flies and
 ## detonates a spark burst on arrival. Non-blocking — caller awaits a timer.

@@ -9,6 +9,8 @@ signal handle_leave(client_id: int, data: Dictionary)
 ## Emitted whenever the rematch request set changes. Carries a copy of the
 ## requests Dictionary (player_id -> true) so the game-over panel can update.
 signal rematch_status_updated(requests: Dictionary)
+## Emitted each second of the pre-game countdown (3, 2, 1) and once with 0 when done.
+signal countdown_tick(seconds: int)
 
 var ws_server: WebSocketServer
 var game_manager: GameManager
@@ -153,12 +155,14 @@ func _on_ready_message(client_id: PackedByteArray, message: Dictionary) -> void:
 func _start_countdown() -> void:
 	_countdown_active = true
 	for tick: int in [3, 2, 1]:
+		countdown_tick.emit(tick)
 		ws_server.broadcast({
 			"type": "countdown",
 			"timestamp": Time.get_ticks_msec(),
 			"data": { "seconds": tick }
 		})
 		await get_tree().create_timer(1.0).timeout
+	countdown_tick.emit(0)
 	_countdown_active = false
 	game_manager.start_game()
 	_broadcast_game_start()
@@ -245,7 +249,14 @@ func _on_turn_executed(events: Array) -> void:
 			}
 		})
 		game_manager.end_game()
-		var winner_id: int = alive[0] if alive.size() == 1 else -1
+		# Use provisional winner if the last survivor later killed themselves
+		var winner_id: int
+		if alive.size() == 1:
+			winner_id = alive[0]
+		elif game_manager.turn_manager and game_manager.turn_manager.provisional_winner_id != -1:
+			winner_id = game_manager.turn_manager.provisional_winner_id
+		else:
+			winner_id = -1
 		var winner_robot: Robot = game_manager.robots.get(winner_id)
 		ws_server.broadcast({
 			"type": "game_over",

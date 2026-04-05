@@ -107,12 +107,22 @@ const FIRST_WORDS = [
   'Volt', 'Sonic', 'Atomic', 'Cobalt', 'Neon', 'Laser', 'Flux', 'Binary',
   'Rogue', 'Shadow', 'Titan', 'Hyper', 'Omega', 'Delta', 'Sigma', 'Blazing',
   'Hex', 'Pixel', 'Circuit', 'Quantum', 'Photon', 'Static',
+  'Glitch', 'Nitro', 'Helium', 'Molten', 'Frozen', 'Crimson', 'Obsidian',
+  'Hollow', 'Wired', 'Overclocked', 'Inferno', 'Venom', 'Cryo', 'Ember',
+  'Stray', 'Relic', 'Primal', 'Apex', 'Radiant', 'Phantom', 'Grim',
+  'Thunder', 'Void', 'Cursed', 'Warped', 'Ancient', 'Berserk', 'Zero',
+  'Blaze', 'Nexus', 'Surge', 'Lunar', 'Solar', 'Astral', 'Dark',
 ]
 const LAST_WORDS = [
   'Unit', 'Bot', 'Core', 'Rex', 'Prime', 'Droid', 'Mech', 'Rig',
   'Claw', 'Spike', 'Storm', 'Pulse', 'Fist', 'Gear', 'Blade', 'Crusher',
   'Zapper', 'Sentinel', 'Wrecker', 'Hammer', 'Spark', 'Bolt', 'Drone',
   'Shell', 'Vortex', 'Forge', 'Crawler', 'Frame', 'Plating', 'Cannon',
+  'Ruin', 'Specter', 'Marauder', 'Bastion', 'Rampage', 'Fury', 'Titan',
+  'Reaper', 'Golem', 'Colossus', 'Stalker', 'Vector', 'Protocol', 'Array',
+  'Warden', 'Ravager', 'Juggernaut', 'Interceptor', 'Destroyer', 'Overlord',
+  'Talon', 'Harbinger', 'Tempest', 'Cyclone', 'Phantom', 'Ghoul', 'Shard',
+  'Node', 'Relay', 'Carrier', 'Chassis', 'Module', 'Probe', 'Scrap',
 ]
 
 function randomRobotName() {

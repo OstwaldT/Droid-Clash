@@ -6,8 +6,8 @@ const BASE_DAMAGE := 15
 
 func _init() -> void:
 	type_id     = TYPE_ATTACK
-	card_name   = "Attack"
-	icon        = "💥"
+	card_name   = "Punch"
+	icon        = "🥊"
 	description = "Deal %d damage to the robot directly in front of you." % BASE_DAMAGE
 
 func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:

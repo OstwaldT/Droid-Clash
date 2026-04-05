@@ -24,6 +24,7 @@ var game_manager: GameManager
 var _player_list: VBoxContainer
 var _count_label: Label
 var _row_map: Dictionary = {}  # player_id -> HBoxContainer
+var _countdown_label: Label    # big centred number shown during pre-game countdown
 
 # --- Setup ---
 
@@ -119,6 +120,17 @@ func _build_ui() -> void:
 	_count_label.add_theme_color_override("font_color", Color(0.60, 0.60, 0.72))
 	vbox.add_child(_count_label)
 	_refresh_count()
+
+	# Big countdown number — hidden until countdown starts
+	_countdown_label = Label.new()
+	_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_countdown_label.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	_countdown_label.add_theme_font_size_override("font_size", 120)
+	_countdown_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.08))
+	_countdown_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_countdown_label.custom_minimum_size = Vector2(200, 160)
+	_countdown_label.visible = false
+	root.add_child(_countdown_label)
 
 func _make_separator() -> HSeparator:
 	var sep := HSeparator.new()
@@ -230,3 +242,16 @@ func _on_player_ready(player_id: int) -> void:
 
 func _on_game_started() -> void:
 	visible = false
+
+## Called each second by MessageHandler.countdown_tick (3, 2, 1, then 0 when done).
+func show_countdown(seconds: int) -> void:
+	if seconds == 0:
+		_countdown_label.visible = false
+		return
+	_countdown_label.text = str(seconds)
+	_countdown_label.visible = true
+	# Pulse: scale up briefly then back to normal
+	_countdown_label.scale = Vector2(1.4, 1.4)
+	var tween := create_tween()
+	tween.tween_property(_countdown_label, "scale", Vector2(1.0, 1.0), 0.35) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

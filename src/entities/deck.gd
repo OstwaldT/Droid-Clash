@@ -12,6 +12,8 @@ var _draw_pile:    Array = []   # Array of type_id ints
 var _discard_pile: Array = []   # Array of type_id ints
 var _current_hand: Array = []   # Array of {instance_id: int, type_id: int}
 var _next_id:      int   = 0    # monotonically increasing instance ID counter
+## Set by draw_hand() — whether the discard was shuffled in mid-deal and at which card index.
+var _last_shuffle_info: Dictionary = {"shuffled": false, "cards_before_shuffle": 0}
 
 func _init() -> void:
 	_build_and_shuffle()
@@ -26,39 +28,46 @@ func _build_and_shuffle() -> void:
 	_draw_pile = cards
 
 ## Draw HAND_SIZE cards from the top of the draw pile.
-## Reshuffles the discard pile if the draw pile runs low.
+## If the draw pile runs out mid-hand, the discard pile is shuffled into a
+## fresh draw pile and drawing continues from there.
+## Shuffle info is stored in _last_shuffle_info for the message handler to read.
 func draw_hand() -> Array:
-	_ensure_enough_cards()
 	_current_hand = []
-	for i in HAND_SIZE:
-		_current_hand.append({
-			"instance_id": _next_id,
-			"type_id": _draw_pile[i],
-		})
-		_next_id += 1
-	_draw_pile = _draw_pile.slice(HAND_SIZE)
+	_last_shuffle_info = {"shuffled": false, "cards_before_shuffle": 0}
+	var needed := HAND_SIZE
+	var cards_drawn := 0
+	while needed > 0:
+		if _draw_pile.is_empty():
+			if _discard_pile.is_empty():
+				_build_and_shuffle()
+			else:
+				_draw_pile = _discard_pile.duplicate()
+				_discard_pile.clear()
+				_draw_pile.shuffle()
+			if not _last_shuffle_info["shuffled"]:
+				_last_shuffle_info["shuffled"] = true
+				_last_shuffle_info["cards_before_shuffle"] = cards_drawn
+		var take := mini(needed, _draw_pile.size())
+		for i in take:
+			_current_hand.append({
+				"instance_id": _next_id,
+				"type_id":     _draw_pile[i],
+			})
+			_next_id += 1
+		_draw_pile = _draw_pile.slice(take)
+		cards_drawn += take
+		needed -= take
 	return _current_hand.duplicate()
 
-func _ensure_enough_cards() -> void:
-	while _draw_pile.size() < HAND_SIZE:
-		if _discard_pile.is_empty():
-			_build_and_shuffle()
-			break
-		_draw_pile.append_array(_discard_pile)
-		_discard_pile.clear()
-		_draw_pile.shuffle()
+## Returns shuffle info from the most recent draw_hand() call.
+func get_last_shuffle_info() -> Dictionary:
+	return _last_shuffle_info.duplicate()
 
-## After a player submits 3 cards, discard those 3 and return the
-## remaining 3 unchosen cards to the bottom of the draw pile.
+## After a player submits 3 cards, discard all 9 cards in hand —
+## both the 3 played and the 6 unchosen ones go to the discard pile.
 func resolve_hand(played_instance_ids: Array) -> void:
-	var to_match := played_instance_ids.duplicate()
 	for card in _current_hand:
-		var idx := to_match.find(card["instance_id"])
-		if idx != -1:
-			to_match.remove_at(idx)
-			_discard_pile.append(card["type_id"])
-		else:
-			_draw_pile.append(card["type_id"])
+		_discard_pile.append(card["type_id"])
 	_current_hand.clear()
 
 ## Look up the type_id for a given instance_id in the current hand.

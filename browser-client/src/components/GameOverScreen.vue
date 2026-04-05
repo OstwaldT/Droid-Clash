@@ -1,7 +1,12 @@
 <template>
   <div class="game-over flex flex-col items-center justify-center min-h-screen p-4">
     <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center">
-      <h1 class="text-4xl font-bold mb-4 text-purple-600">🎉 Game Over!</h1>
+      <h1 class="text-4xl font-bold mb-2" :class="isVictory ? 'text-yellow-500' : 'text-gray-500'">
+        {{ isVictory ? '🏆 Victory!' : '💀 Defeat' }}
+      </h1>
+      <p v-if="gameStore.winnerName" class="text-gray-500 mb-6 text-sm">
+        {{ isVictory ? 'You won!' : `${gameStore.winnerName} wins` }}
+      </p>
 
       <!-- Final standings -->
       <div v-if="gameStore.robots.length > 0" class="mb-6">
@@ -17,33 +22,13 @@
               :style="{ backgroundColor: robot.color }"
             ></span>
             <span class="font-bold flex-1 text-left">
-              {{ robot.name || robot.playerId }}
+              {{ robot.name || robot.bot_name || 'Player' }}
+              <span v-if="robot.playerId === playerStore.playerId" class="text-xs font-normal text-gray-400 ml-1">(you)</span>
               <span v-if="robot.health > 0" class="text-yellow-500 ml-1">🏆</span>
               <span v-else class="text-gray-400 ml-1">💀</span>
             </span>
             <span class="text-sm font-mono" :class="robot.health > 0 ? 'text-green-600' : 'text-gray-400'">
               {{ robot.health }} HP
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Rematch section -->
-      <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-        <p class="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">Let's Go Again?</p>
-        <div class="space-y-2">
-          <div
-            v-for="robot in gameStore.robots"
-            :key="robot.playerId"
-            class="flex items-center gap-2 text-sm"
-          >
-            <span class="text-base">{{ isRematchReady(robot.playerId) ? '✅' : '⌛' }}</span>
-            <span
-              class="font-medium"
-              :class="isRematchReady(robot.playerId) ? 'text-gray-800' : 'text-gray-400'"
-            >
-              {{ robot.name || robot.playerId }}
-              <span v-if="robot.playerId === playerStore.playerId" class="text-xs text-gray-400">(you)</span>
             </span>
           </div>
         </div>
@@ -78,13 +63,11 @@ const playerStore = usePlayerStore()
 
 const hasRequestedRematch = ref(false)
 
+const isVictory = computed(() => gameStore.winnerId === playerStore.playerId)
+
 const sortedRobots = computed(() => {
   return [...gameStore.robots].sort((a, b) => b.health - a.health)
 })
-
-const isRematchReady = (playerId) => {
-  return gameStore.rematchPlayers.includes(playerId)
-}
 
 const requestRematch = () => {
   hasRequestedRematch.value = true

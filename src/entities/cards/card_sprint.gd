@@ -1,11 +1,11 @@
 extends Card
 
-class_name CardRush
+class_name CardSprint
 
 func _init() -> void:
 	type_id     = TYPE_RUSH
-	card_name   = "Rush"
-	icon        = "⏩"
+	card_name   = "Sprint"
+	icon        = "🦅"
 	description = "Move your robot 2 hexes forward. Stops early if blocked or fallen."
 
 func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
@@ -13,9 +13,9 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 
 	for _i in range(2):
 		var from_pos := robot.position
-		var move_result := robot.move_forward(grid, all_robots)
+		var result := robot.move_forward(grid, all_robots, false)
 
-		match move_result:
+		match result["result"]:
 			"moved":
 				steps.append({
 					"success": true,
