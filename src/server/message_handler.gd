@@ -101,19 +101,20 @@ func _on_ready_message(client_id: PackedByteArray, message: Dictionary) -> void:
 	var player_id = client_to_player.get(client_id, -1)
 	if player_id == -1:
 		return
-	
+
 	# Mark player as ready
 	if player_id in game_manager.players:
 		game_manager.players[player_id]["ready"] = true
-		_broadcast_player_list()  # Broadcast updated player list
-		
+		game_manager.player_ready.emit(player_id)
+		_broadcast_player_list()
+
 		# Check if all players ready
 		var all_ready = true
 		for player in game_manager.players.values():
 			if not player.get("ready", false):
 				all_ready = false
 				break
-		
+
 		if all_ready and game_manager.players.size() >= 2:
 			game_manager.start_game()
 			_broadcast_game_start()

@@ -8,6 +8,7 @@ var message_handler: MessageHandler
 var turn_manager: TurnManager
 var status_panel: ServerStatusPanel
 var game_board: GameBoard3D
+var lobby_panel: LobbyPanel
 
 func _ready() -> void:
 	print("Initializing Droid-Clash Server...")
@@ -38,6 +39,11 @@ func _ready() -> void:
 	# 2D overlay (renders on top of the 3D world)
 	status_panel = ServerStatusPanel.new()
 	add_child(status_panel)
+
+	# Lobby overlay (hides when game starts)
+	lobby_panel = LobbyPanel.new()
+	add_child(lobby_panel)
+	lobby_panel.setup(game_manager)
 
 	print("Server initialized and ready for connections")
 

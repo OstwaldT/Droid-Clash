@@ -6,6 +6,7 @@ signal game_started
 signal game_ended
 signal player_joined(player_id: int, player_name: String)
 signal player_left(player_id: int)
+signal player_ready(player_id: int)
 signal turn_changed(turn_number: int)
 
 enum GamePhase { LOBBY, PLAYING, GAME_OVER }
