@@ -154,7 +154,7 @@ func resolve_and_redraw_player_hand(player_id: int) -> Array:
 	var deck: Deck = player_decks.get(player_id)
 	if not deck:
 		return []
-	var played := players[player_id].get("submitted_instance_ids", [])
+	var played: Array = players[player_id].get("submitted_instance_ids", [])
 	deck.resolve_hand(played)
 	return deck.draw_hand()
 
