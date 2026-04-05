@@ -1,0 +1,134 @@
+<template>
+  <div class="lobby-screen flex flex-col items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+      <h1 class="text-4xl font-bold text-center mb-8 text-purple-600">🤖 Droid-Clash</h1>
+
+      <div v-if="!playerStore.isConnected" class="space-y-6">
+        <div>
+          <label for="playerName" class="block text-sm font-medium text-gray-700 mb-2">
+            Player Name
+          </label>
+          <input
+            id="playerName"
+            v-model="playerName"
+            type="text"
+            placeholder="Enter your name"
+            maxlength="20"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+            @keyup.enter="joinGame"
+          />
+        </div>
+
+        <button
+          @click="joinGame"
+          :disabled="!playerName.trim() || isConnecting"
+          class="w-full py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+        >
+          {{ isConnecting ? 'Connecting...' : 'Join Game' }}
+        </button>
+
+        <div v-if="connectionError" class="p-4 bg-red-100 text-red-700 rounded-lg text-sm">
+          {{ connectionError }}
+        </div>
+      </div>
+
+      <div v-else class="space-y-6">
+        <div class="text-center">
+          <p class="text-green-600 font-semibold mb-2">✓ Connected</p>
+          <p class="text-lg">Welcome, <span class="font-bold">{{ playerStore.playerName }}</span>!</p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h2 class="font-semibold text-gray-800 mb-3">Players</h2>
+          <div class="space-y-2">
+            <div
+              v-for="player in gameStore.players"
+              :key="player.playerId"
+              class="flex items-center justify-between p-3 bg-white rounded border-2"
+              :class="player.isReady ? 'border-green-500 bg-green-50' : 'border-gray-200'"
+            >
+              <span class="font-medium">{{ player.name }}</span>
+              <span 
+                class="text-sm font-semibold"
+                :class="player.isReady ? 'text-green-600' : 'text-gray-400'"
+              >
+                {{ player.isReady ? '✓ Ready' : '- Waiting' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          @click="readyUp"
+          class="w-full py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition"
+        >
+          Ready
+        </button>
+
+        <button
+          @click="leaveGame"
+          class="w-full py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition"
+        >
+          Leave Game
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { usePlayerStore } from '@/stores/playerStore'
+import { useGameStore } from '@/stores/gameStore'
+import websocket from '@/api/websocket'
+
+const playerStore = usePlayerStore()
+const gameStore = useGameStore()
+
+const playerName = ref('')
+const isConnecting = ref(false)
+const connectionError = ref('')
+
+const joinGame = async () => {
+  if (!playerName.value.trim()) return
+
+  isConnecting.value = true
+  connectionError.value = ''
+
+  try {
+    playerStore.setPlayer(null, playerName.value)
+    await websocket.connect()
+    websocket.send({
+      type: 'join',
+      data: { playerName: playerName.value },
+    })
+  } catch (error) {
+    connectionError.value = 'Failed to connect. Please try again.'
+    console.error(error)
+  } finally {
+    isConnecting.value = false
+  }
+}
+
+const leaveGame = () => {
+  websocket.send({
+    type: 'leave',
+    data: { playerId: playerStore.playerId },
+  })
+  playerStore.reset()
+  gameStore.$reset()
+}
+
+const readyUp = () => {
+  websocket.send({
+    type: 'ready',
+    data: { playerId: playerStore.playerId },
+  })
+}
+</script>
+
+<style scoped>
+.lobby-screen {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+</style>

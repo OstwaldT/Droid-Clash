@@ -1,0 +1,37 @@
+# .copilotignore
+
+# Build outputs
+/browser-client/dist/
+/browser-client/node_modules/
+/godot/.godot/
+/godot/builds/
+*.exe
+*.app
+
+# Dependencies
+node_modules/
+.godot/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Session files
+.env.local
+.env.*.local
+
+# Generated files
+*.import
+*.tres
+
+# Testing
+coverage/
+.nyc_output/
