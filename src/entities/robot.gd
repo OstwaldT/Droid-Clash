@@ -9,11 +9,13 @@ var direction: int = 0  # 0-5 (hex directions)
 var health: int = 100
 var max_health: int = 100
 var status: String = "alive"  # alive, dead
+var color: String = "#ffffff"
 
-func _init(pid: int, pname: String, start_pos: Vector2i) -> void:
+func _init(pid: int, pname: String, start_pos: Vector2i, pcolor: String = "#ffffff") -> void:
 	player_id = pid
 	bot_name = pname
 	position = start_pos
+	color = pcolor
 	health = max_health
 
 ## Execute a move instruction
@@ -58,5 +60,6 @@ func to_dict() -> Dictionary:
 		"direction": direction,
 		"health": health,
 		"maxHealth": max_health,
-		"status": status
+		"status": status,
+		"color": color
 	}

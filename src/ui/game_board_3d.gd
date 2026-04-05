@@ -84,12 +84,12 @@ func _on_player_joined(player_id: int, player_name: String) -> void:
 	if player_id in _robot_visuals:
 		return
 
-	var color: Color = PLAYER_COLORS[(player_id - 1) % PLAYER_COLORS.size()]
+	var robot: Robot = game_manager.robots.get(player_id)
+	var color: Color = Color.html(robot.color) if robot else PLAYER_COLORS[(player_id - 1) % PLAYER_COLORS.size()]
 	var visual := RobotVisual.new()
 	add_child(visual)
 	visual.setup(player_id, player_name, color)
 
-	var robot: Robot = game_manager.robots.get(player_id)
 	if robot:
 		visual.move_to(hex_to_robot_pos(robot.position.x, robot.position.y), false)
 		visual.set_robot_direction(robot.direction)

@@ -143,6 +143,7 @@ class WebSocketClient {
   handleConnect(data) {
     const playerStore = usePlayerStore();
     playerStore.setPlayer(data.playerId, playerStore.playerName);
+    if (data.color) playerStore.setColor(data.color);
     playerStore.setConnected(true);
   }
 

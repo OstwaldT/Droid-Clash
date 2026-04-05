@@ -11,6 +11,19 @@ signal turn_changed(turn_number: int)
 
 enum GamePhase { LOBBY, PLAYING, GAME_OVER }
 
+## Palette shared with game_board_3d / lobby_panel — one color per player slot.
+## Hex strings match the Color(...) literals used by the 3D UI.
+const PLAYER_COLORS: Array = [
+	"#e63333",  # Red
+	"#3385eb",  # Blue
+	"#33cc4d",  # Green
+	"#ebb814",  # Yellow
+	"#b82eeb",  # Purple
+	"#f28014",  # Orange
+	"#14d1d1",  # Cyan
+	"#eb61b8",  # Pink
+]
+
 var phase: GamePhase = GamePhase.LOBBY
 var current_turn: int = 0
 var max_players: int = 8
@@ -30,15 +43,19 @@ func add_player(player_id: int, player_name: String, client_id: PackedByteArray)
 	if players.size() >= max_players:
 		return false
 	
+	# Assign a distinct color by slot index (before the player is added)
+	var color: String = PLAYER_COLORS[players.size() % PLAYER_COLORS.size()]
+
 	players[player_id] = {
 		"name": player_name,
 		"client_id": client_id,
-		"submitted": false
+		"submitted": false,
+		"color": color
 	}
 	
 	# Spawn robot at a random valid position on the hex board
 	var start_pos := grid.get_random_valid_hex()
-	robots[player_id] = Robot.new(player_id, player_name, start_pos)
+	robots[player_id] = Robot.new(player_id, player_name, start_pos, color)
 	
 	player_joined.emit(player_id, player_name)
 	print("Player %d (%s) joined" % [player_id, player_name])

@@ -44,10 +44,14 @@
             <div
               v-for="player in gameStore.players"
               :key="player.playerId"
-              class="flex items-center justify-between p-3 bg-white rounded border-2"
+              class="flex items-center gap-3 p-3 bg-white rounded border-2"
               :class="player.isReady ? 'border-green-500 bg-green-50' : 'border-gray-200'"
             >
-              <span class="font-medium">{{ player.name }}</span>
+              <span
+                class="inline-block w-3 h-3 rounded-full flex-shrink-0"
+                :style="{ backgroundColor: player.color || '#9b59b6' }"
+              ></span>
+              <span class="font-medium flex-1">{{ player.name }}</span>
               <span 
                 class="text-sm font-semibold"
                 :class="player.isReady ? 'text-green-600' : 'text-gray-400'"

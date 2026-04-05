@@ -148,9 +148,15 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 
-	# Colored identity swatch
+	# Colored identity swatch — read from robot if available, fallback to palette index
+	var robot_ref: Robot = game_manager.robots.get(player_id) if game_manager else null
+	var swatch_color: Color
+	if robot_ref and not robot_ref.color.is_empty():
+		swatch_color = Color.html(robot_ref.color)
+	else:
+		swatch_color = PLAYER_COLORS[(player_id - 1) % PLAYER_COLORS.size()]
 	var swatch := ColorRect.new()
-	swatch.color = PLAYER_COLORS[(player_id - 1) % PLAYER_COLORS.size()]
+	swatch.color = swatch_color
 	swatch.custom_minimum_size = Vector2(14, 14)
 	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(swatch)

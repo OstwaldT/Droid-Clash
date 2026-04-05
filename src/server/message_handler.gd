@@ -53,6 +53,7 @@ func _on_join_message(client_id: PackedByteArray, message: Dictionary) -> void:
 		"timestamp": Time.get_ticks_msec(),
 		"data": {
 			"playerId": player_id,
+			"color": game_manager.robots[player_id].color,
 			"wsUrl": "ws://localhost:8080",
 			"status": "connected"
 		}
@@ -143,6 +144,7 @@ func _broadcast_player_list() -> void:
 			players_data.append({
 				"playerId": player_id,
 				"name": robot.bot_name,
+				"color": robot.color,
 				"isReady": player_info.get("ready", false),
 				"health": robot.health
 			})
