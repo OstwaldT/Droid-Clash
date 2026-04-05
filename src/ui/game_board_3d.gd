@@ -54,9 +54,9 @@ func _spawn_hex_tile(q: int, r: int) -> void:
 	mat.roughness = 0.85
 	tile.material_override = mat
 
-	# Flat-top hex: position sits at tile surface level
-	var world := hex_to_world(q, r)
-	tile.position = world
+	# Rotate 30° so the flat edge faces forward (flat-top orientation)
+	tile.rotation_degrees.y = 30.0
+	tile.position = hex_to_world(q, r)
 	add_child(tile)
 
 # --- Coordinate conversion (flat-top axial) ---
