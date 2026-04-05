@@ -174,14 +174,16 @@ func update_health(hp: int, max_hp: int) -> void:
 
 ## Smoothly rotate to face a given hex direction.
 func set_robot_direction(dir: int, animate: bool = false) -> void:
-	# Flat-top hex direction deltas → world (x, z) offsets
-	# Dir 0 East=(1,0), 1 NE=(1,-1), 2 NW=(0,-1), 3 W=(-1,0), 4 SW=(-1,1), 5 SE=(0,1)
+	# Convert hex direction index to world-space (dx, dz) using the same
+	# flat-top axial formula as hex_to_world in game_board_3d.gd.
+	# Godot rotation.y = θ means the robot faces (sin θ, 0, cos θ),
+	# so the correct angle is atan2(dx, dz) — NOT atan2(dz, dx).
 	const DQ := [1, 1, 0, -1, -1, 0]
 	const DR := [0, -1, -1, 0, 1, 1]
 	const HEX_SIZE := 1.2
 	var dx: float = HEX_SIZE * 1.5 * float(DQ[dir])
 	var dz: float = HEX_SIZE * (sqrt(3.0) / 2.0 * float(DQ[dir]) + sqrt(3.0) * float(DR[dir]))
-	var target_angle := atan2(dz, dx) + PI / 2.0
+	var target_angle := atan2(dx, dz)
 	if animate:
 		var tween := create_tween()
 		tween.set_ease(Tween.EASE_OUT)
