@@ -6,12 +6,13 @@ class_name GameOverPanel
 ## Displays the winner (highlighted in their color) and final health standings.
 
 const PANEL_W: float = 520.0
-const PANEL_H: float = 500.0
+const PANEL_H: float = 620.0
 
 var game_manager: GameManager
 
 var _winner_label:  Label
 var _result_list:   VBoxContainer
+var _rematch_list:  VBoxContainer  # updated as players opt in
 
 # --- Setup ---
 
@@ -103,6 +104,18 @@ func _build_ui() -> void:
 	_result_list.add_theme_constant_override("separation", 6)
 	vbox.add_child(_result_list)
 
+	vbox.add_child(_make_separator(Color(0.25, 0.25, 0.40, 0.60)))
+
+	var rematch_hdr := Label.new()
+	rematch_hdr.text = "🔄  LET'S GO AGAIN?"
+	rematch_hdr.add_theme_font_size_override("font_size", 13)
+	rematch_hdr.add_theme_color_override("font_color", Color(0.55, 0.75, 1.00))
+	vbox.add_child(rematch_hdr)
+
+	_rematch_list = VBoxContainer.new()
+	_rematch_list.add_theme_constant_override("separation", 4)
+	vbox.add_child(_rematch_list)
+
 func _make_separator(color: Color) -> HSeparator:
 	var sep := HSeparator.new()
 	var s := StyleBoxFlat.new()
@@ -191,3 +204,27 @@ func _make_result_row(robot: Robot, is_winner: bool) -> HBoxContainer:
 	row.add_child(hp_lbl)
 
 	return row
+
+## Called by MessageHandler whenever a player opts in (or out) for a rematch.
+## requests: Dictionary of player_id -> true for every player who has asked.
+func update_rematch(requests: Dictionary) -> void:
+	for child in _rematch_list.get_children():
+		child.queue_free()
+	for robot in game_manager.robots.values():
+		var ready: bool = robot.player_id in requests
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+
+		var icon := Label.new()
+		icon.text = "✅" if ready else "⌛"
+		icon.add_theme_font_size_override("font_size", 14)
+		row.add_child(icon)
+
+		var name_lbl := Label.new()
+		name_lbl.text = robot.bot_name
+		name_lbl.add_theme_font_size_override("font_size", 14)
+		name_lbl.add_theme_color_override("font_color",
+			Color.html(robot.color) if ready else Color(0.55, 0.55, 0.55))
+		row.add_child(name_lbl)
+
+		_rematch_list.add_child(row)

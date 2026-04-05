@@ -25,6 +25,9 @@ export const useGameStore = defineStore('game', () => {
   // Execution order for the upcoming round: array of player IDs
   const turnOrder = ref([])
 
+  // Player IDs who have requested a rematch (shown on game-over screen)
+  const rematchPlayers = ref([])
+
   // Actions
   const setGameState = (state) => {
     gameId.value = state.gameId
@@ -83,6 +86,7 @@ export const useGameStore = defineStore('game', () => {
     turnSubmitted.value = false
     playerStatuses.value = {}
     turnOrder.value = []
+    rematchPlayers.value = []
   }
 
   const setTurnSubmitted = (val) => {
@@ -127,6 +131,7 @@ export const useGameStore = defineStore('game', () => {
     turnSubmitted,
     playerStatuses,
     turnOrder,
+    rematchPlayers,
     setGameState,
     setAvailableCards,
     setTurnSubmitted,

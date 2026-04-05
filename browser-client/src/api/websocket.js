@@ -145,6 +145,9 @@ class WebSocketClient {
       case "round_ready":
         this.handleRoundReady();
         break;
+      case "rematch_status":
+        this.handleRematchStatus(data);
+        break;
       case "error":
         this.handleError(data);
         break;
@@ -165,6 +168,7 @@ class WebSocketClient {
 
   handleGameStart(data) {
     const gameStore = useGameStore();
+    gameStore.rematchPlayers = [];  // clear any stale rematch state
     gameStore.setGameState({
       gameId: data.gameId,
       phase: "card_selection",
@@ -220,6 +224,11 @@ class WebSocketClient {
     if (data.playerStatuses) {
       gameStore.setPlayerStatuses(data.playerStatuses);
     }
+  }
+
+  handleRematchStatus(data) {
+    const gameStore = useGameStore();
+    gameStore.rematchPlayers = data.requestingPlayers || [];
   }
 
   handleError(data) {

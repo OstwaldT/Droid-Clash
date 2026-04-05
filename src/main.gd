@@ -59,6 +59,8 @@ func _ready() -> void:
 	add_child(game_over_panel)
 	game_over_panel.setup(game_manager)
 	game_board.game_over_panel = game_over_panel
+	# Update the rematch list on the panel whenever a player opts in
+	message_handler.rematch_status_updated.connect(game_over_panel.update_rematch)
 
 	print("Server initialized and ready for connections")
 

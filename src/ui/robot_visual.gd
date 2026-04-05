@@ -270,6 +270,24 @@ func mark_dead() -> void:
 	barrel_mat.metallic = 0.0
 	_name_label.modulate = Color(0.45, 0.45, 0.45)
 
+## Restore this robot to a fully alive visual state (called on rematch).
+func revive() -> void:
+	_is_dead = false
+	visible = true
+	scale = Vector3.ONE
+	# Restore body color
+	var body_mat := _body_mesh.material_override as StandardMaterial3D
+	body_mat.albedo_color     = robot_color
+	body_mat.emission_enabled = false
+	# Restore head color
+	(_head_mesh.material_override as StandardMaterial3D).albedo_color = robot_color.darkened(0.28)
+	# Restore barrel
+	var barrel_mat := _direction_indicator.material_override as StandardMaterial3D
+	barrel_mat.albedo_color = Color(0.78, 0.78, 0.78)
+	barrel_mat.metallic     = 0.8
+	# Restore name label
+	_name_label.modulate = Color.WHITE
+
 ## Explosion death: flash orange, scatter debris, shrink robot to nothing.
 func explode() -> void:
 	if _is_dead:

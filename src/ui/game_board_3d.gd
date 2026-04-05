@@ -34,6 +34,7 @@ func setup(gm: GameManager, tm: TurnManager) -> void:
 	game_manager = gm
 	gm.player_joined.connect(_on_player_joined)
 	gm.player_left.connect(_on_player_left)
+	gm.game_started.connect(_on_game_restarted)
 	tm.turn_executed.connect(_on_turn_executed)
 	_generate_hex_grid()
 
@@ -106,6 +107,21 @@ func _on_player_left(player_id: int) -> void:
 	if player_id in _robot_visuals:
 		_robot_visuals[player_id].queue_free()
 		_robot_visuals.erase(player_id)
+
+## Called when the game restarts (rematch). Reset all robot visuals to their
+## new positions without re-creating them, and hide the game-over overlay.
+func _on_game_restarted() -> void:
+	if game_over_panel:
+		game_over_panel.visible = false
+	for player_id in game_manager.robots.keys():
+		var robot: Robot = game_manager.robots[player_id]
+		var visual: RobotVisual = _robot_visuals.get(player_id)
+		if not visual:
+			continue
+		visual.revive()
+		visual.move_to(hex_to_robot_pos(robot.position.x, robot.position.y), false)
+		visual.set_robot_direction(robot.direction)
+		visual.update_health(robot.health, robot.max_health)
 
 func _on_turn_executed(events: Array) -> void:
 	# Step durations (seconds to wait after each event type)

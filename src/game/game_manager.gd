@@ -168,6 +168,24 @@ func resolve_and_redraw_player_hand(player_id: int) -> Array:
 	players[player_id]["submitted_instance_ids"] = []  # clear after use
 	return deck.draw_hand()
 
+## Reset all game state for a rematch while keeping the same players.
+## Robots are re-spawned at new positions; decks and turn order are refreshed.
+func reset_for_rematch() -> void:
+	phase = GamePhase.LOBBY
+	current_turn = 0
+	if turn_manager:
+		turn_manager.reset_priority()
+	for player_id in players.keys():
+		var start_pos := grid.get_random_valid_hex()
+		var pdata: Dictionary = players[player_id]
+		robots[player_id] = Robot.new(player_id, pdata["name"], start_pos, pdata["color"])
+		player_decks[player_id] = Deck.new()
+		players[player_id]["submitted"] = false
+		players[player_id]["submitted_instance_ids"] = []
+		if turn_manager:
+			turn_manager.register_player(player_id)
+	print("Game reset for rematch with %d players" % players.size())
+
 func to_dict() -> Dictionary:
 	return {
 		"gameId": "game_001",

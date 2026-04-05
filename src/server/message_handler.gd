@@ -6,10 +6,14 @@ signal handle_join(client_id: int, data: Dictionary)
 signal handle_turn_submit(client_id: int, data: Dictionary)
 signal handle_ready(client_id: int, data: Dictionary)
 signal handle_leave(client_id: int, data: Dictionary)
+## Emitted whenever the rematch request set changes. Carries a copy of the
+## requests Dictionary (player_id -> true) so the game-over panel can update.
+signal rematch_status_updated(requests: Dictionary)
 
 var ws_server: WebSocketServer
 var game_manager: GameManager
 var client_to_player: Dictionary = {}  # Maps client_id to player_id
+var rematch_requests: Dictionary = {}  # player_id -> true
 
 func _init(server: WebSocketServer, manager: GameManager, tm: TurnManager) -> void:
 	ws_server = server
@@ -20,6 +24,7 @@ func _init(server: WebSocketServer, manager: GameManager, tm: TurnManager) -> vo
 	ws_server.add_message_handler("turn_submit", _on_turn_submit_message)
 	ws_server.add_message_handler("ready", _on_ready_message)
 	ws_server.add_message_handler("leave", _on_leave_message)
+	ws_server.add_message_handler("rematch", _on_rematch_message)
 
 	# Connect signals
 	ws_server.client_connected.connect(_on_client_connected)
@@ -316,3 +321,34 @@ func _broadcast_round_ready() -> void:
 ## Called when all players have submitted and the round is about to execute.
 func _on_round_starting() -> void:
 	_broadcast_player_statuses("acting")
+
+## Handle a rematch request from a client.
+func _on_rematch_message(client_id: PackedByteArray, _message: Dictionary) -> void:
+	var player_id = client_to_player.get(client_id, -1)
+	if player_id == -1 or game_manager.phase != GameManager.GamePhase.GAME_OVER:
+		return
+	rematch_requests[player_id] = true
+	_broadcast_rematch_status()
+	# When all connected players agree, reset and restart immediately.
+	if rematch_requests.size() >= game_manager.players.size():
+		_trigger_rematch()
+
+## Broadcast who has (and hasn't) requested a rematch.
+func _broadcast_rematch_status() -> void:
+	var requesting: Array = rematch_requests.keys()
+	ws_server.broadcast({
+		"type": "rematch_status",
+		"timestamp": Time.get_ticks_msec(),
+		"data": {
+			"requestingPlayers": requesting,
+			"totalPlayers": game_manager.players.size()
+		}
+	})
+	rematch_status_updated.emit(rematch_requests.duplicate())
+
+## Reset the game state and start a fresh round with the same players.
+func _trigger_rematch() -> void:
+	rematch_requests.clear()
+	game_manager.reset_for_rematch()
+	game_manager.start_game()
+	_broadcast_game_start()
