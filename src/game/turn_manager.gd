@@ -31,7 +31,7 @@ func execute_round() -> Array:
 	# from submitting first
 	var players_to_execute: Array = []
 	for player_id in card_submissions.keys():
-		if game_manager.robots[player_id].is_alive():
+		if player_id in game_manager.robots and game_manager.robots[player_id].is_alive():
 			players_to_execute.append(player_id)
 	players_to_execute.shuffle()
 	
