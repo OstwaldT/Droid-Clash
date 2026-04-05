@@ -117,7 +117,7 @@ func _on_turn_executed(events: Array) -> void:
 
 		match int(event.get("type", -1)):
 
-			Instructions.InstructionType.MOVE:
+			Card.TYPE_MOVE:
 				if event.get("success", false):
 					var to: Vector2i = event.get("to", Vector2i.ZERO)
 					visual.move_to(hex_to_robot_pos(to.x, to.y))
@@ -126,12 +126,12 @@ func _on_turn_executed(events: Array) -> void:
 					visual.bump_blocked()
 					await get_tree().create_timer(BLOCKED_STEP).timeout
 
-			Instructions.InstructionType.TURN_LEFT, \
-			Instructions.InstructionType.TURN_RIGHT:
+			Card.TYPE_TURN_LEFT, \
+			Card.TYPE_TURN_RIGHT:
 				visual.set_robot_direction(event.get("new_direction", 0), true)
 				await get_tree().create_timer(TURN_STEP).timeout
 
-			Instructions.InstructionType.ATTACK:
+			Card.TYPE_ATTACK:
 				visual.flash_attack()
 				if event.get("success", false):
 					var target_visual: RobotVisual = _robot_visuals.get(event.get("target", -1))

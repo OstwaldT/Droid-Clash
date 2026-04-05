@@ -53,14 +53,15 @@
             v-for="card in gameStore.availableCards"
             :key="card.id"
             @click="gameStore.selectCard(card.id)"
-            class="p-3 rounded-lg font-semibold transition border-2"
+            class="p-3 rounded-lg font-semibold transition border-2 flex flex-col items-center text-center"
             :style="gameStore.isCardSelected(card.id)
               ? { borderColor: playerStore.playerColor, backgroundColor: playerStore.playerColor + '22', color: '#1a1a2e' }
               : {}"
             :class="gameStore.isCardSelected(card.id) ? '' : 'border-gray-300 bg-gray-50 text-gray-800 hover:border-gray-400 hover:bg-gray-100'"
           >
             <div class="text-3xl mb-1">{{ card.icon }}</div>
-            <div class="text-sm">{{ card.name }}</div>
+            <div class="text-sm font-bold">{{ card.name }}</div>
+            <div v-if="card.description" class="mt-1 text-xs text-gray-500 leading-tight">{{ card.description }}</div>
             <div
               v-if="gameStore.isCardSelected(card.id)"
               class="mt-1 text-xs font-bold"

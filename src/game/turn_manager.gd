@@ -7,13 +7,11 @@ signal round_complete
 
 var game_manager: GameManager
 var grid: HexGrid
-var instructions: Instructions
-var card_submissions: Dictionary = {}  # player_id -> [card_ids]
+var card_submissions: Dictionary = {}  # player_id -> [instance_id, ...]
 
 func _init(manager: GameManager) -> void:
 	game_manager = manager
 	grid = manager.grid
-	instructions = Instructions.new()
 
 ## Submit cards for a player's turn
 func submit_turn(player_id: int, card_ids: Array) -> bool:
@@ -45,11 +43,14 @@ func execute_round() -> Array:
 			var type_id := game_manager.get_card_type_id(player_id, instance_id)
 			if type_id == -1:
 				continue  # unknown card — skip gracefully
-			
-			var result = instructions.execute_instruction(type_id, robot, grid, game_manager.robots)
-			
-			# Build event; merge result FIRST so "type" (InstructionType int)
-			# is not shadowed by a stale string value
+
+			var card := CardRegistry.create(type_id)
+			if card == null:
+				continue
+
+			var result := card.execute(robot, grid, game_manager.robots)
+
+			# Build event dict; merge result so all card-specific fields are included
 			var event := {"playerId": player_id, "instanceId": instance_id, "typeId": type_id}
 			event.merge(result)
 			events.append(event)

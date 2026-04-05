@@ -8,34 +8,19 @@ class_name Deck
 
 const HAND_SIZE := 6
 
-## Distribution: moves are common, attacks are rare.
-const COMPOSITION := {
-	1: 5,  # Move Forward
-	2: 3,  # Turn Left
-	3: 3,  # Turn Right
-	4: 2,  # Attack
-}  # 13 cards total
-
-const CARD_DEFINITIONS := {
-	1: {"name": "Move Forward", "icon": "🔼"},
-	2: {"name": "Turn Left",    "icon": "↶"},
-	3: {"name": "Turn Right",   "icon": "↷"},
-	4: {"name": "Attack",       "icon": "💥"},
-}
-
 var _draw_pile:    Array = []   # Array of type_id ints
 var _discard_pile: Array = []   # Array of type_id ints
-var _current_hand: Array = []   # Array of {instance_id, type_id}
+var _current_hand: Array = []   # Array of {instance_id: int, type_id: int}
 var _next_id:      int   = 0    # monotonically increasing instance ID counter
 
 func _init() -> void:
 	_build_and_shuffle()
 
-## Build a fresh draw pile from COMPOSITION and shuffle it.
+## Build a fresh draw pile from CardRegistry.COMPOSITION and shuffle it.
 func _build_and_shuffle() -> void:
 	var cards: Array = []
-	for type_id in COMPOSITION:
-		for _i in COMPOSITION[type_id]:
+	for type_id in CardRegistry.COMPOSITION:
+		for _i in CardRegistry.COMPOSITION[type_id]:
 			cards.append(type_id)
 	cards.shuffle()
 	_draw_pile = cards
@@ -94,12 +79,13 @@ func get_hand_instance_ids() -> Array:
 ## Serialise the current hand for network transmission.
 func hand_to_array() -> Array:
 	var out: Array = []
-	for card in _current_hand:
-		var defn: Dictionary = CARD_DEFINITIONS.get(card["type_id"], {})
+	for entry in _current_hand:
+		var card: Card = CardRegistry.create(entry["type_id"])
 		out.append({
-			"id":     card["instance_id"],
-			"typeId": card["type_id"],
-			"name":   defn.get("name", "Unknown"),
-			"icon":   defn.get("icon", "?"),
+			"id":          entry["instance_id"],
+			"typeId":      entry["type_id"],
+			"name":        card.card_name   if card else "Unknown",
+			"icon":        card.icon        if card else "?",
+			"description": card.description if card else "",
 		})
 	return out
