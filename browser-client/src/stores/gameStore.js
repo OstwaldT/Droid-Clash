@@ -60,6 +60,15 @@ export const useGameStore = defineStore('game', () => {
     turnSubmitted.value = false
   }
 
+  // Reset selection state between rounds WITHOUT wiping availableCards.
+  // Used by handleGameStateUpdate: the fresh hand already arrived via hand_update
+  // (sent by the server before game_state_update), so clearing availableCards here
+  // would discard the new hand and leave the UI stuck on the loading spinner.
+  const resetRoundState = () => {
+    selectedCards.value = []
+    turnSubmitted.value = false
+  }
+
   const setTurnSubmitted = (val) => {
     turnSubmitted.value = val
   }
@@ -108,6 +117,7 @@ export const useGameStore = defineStore('game', () => {
     resetPlayerStatuses,
     selectCard,
     clearSelectedCards,
+    resetRoundState,
     isCardSelected,
     canSubmitTurn,
   }

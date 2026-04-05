@@ -184,7 +184,9 @@ class WebSocketClient {
     gameStore.robots = data.robots;
     gameStore.turnNumber = data.turnNumber;
     gameStore.phase = data.currentPhase || "card_selection";
-    gameStore.clearSelectedCards(); // clears cards + resets turnSubmitted for next turn
+    // Reset selection state only — availableCards already holds the fresh hand
+    // that arrived via hand_update (sent by server before this message)
+    gameStore.resetRoundState();
     if (data.playerStatuses) {
       gameStore.setPlayerStatuses(data.playerStatuses);
     }
