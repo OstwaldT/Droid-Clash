@@ -17,8 +17,9 @@ var _result_list:   VBoxContainer
 
 func setup(gm: GameManager) -> void:
 	game_manager = gm
-	gm.game_ended.connect(_on_game_ended)
-	layer   = 20   # above HUD and lobby
+	# Panel is shown explicitly by GameBoard3D after animations complete,
+	# not directly from game_ended signal, so we don't connect here.
+	layer   = 20
 	visible = false
 	_build_ui()
 
@@ -112,7 +113,8 @@ func _make_separator(color: Color) -> HSeparator:
 
 # --- Populate on game end ---
 
-func _on_game_ended() -> void:
+## Called by GameBoard3D after all round animations have completed.
+func show_result() -> void:
 	var alive := game_manager.get_alive_players()
 
 	# Winner line

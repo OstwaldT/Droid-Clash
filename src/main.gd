@@ -52,10 +52,11 @@ func _ready() -> void:
 	add_child(player_status_hud)
 	player_status_hud.setup(game_manager, turn_manager)
 
-	# Game over overlay (hidden until game ends)
+	# Game over overlay (hidden until game ends; shown by game_board after animations)
 	game_over_panel = GameOverPanel.new()
 	add_child(game_over_panel)
 	game_over_panel.setup(game_manager)
+	game_board.game_over_panel = game_over_panel
 
 	print("Server initialized and ready for connections")
 

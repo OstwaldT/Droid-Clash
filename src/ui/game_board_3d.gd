@@ -20,6 +20,7 @@ const PLAYER_COLORS: Array = [
 ]
 
 var game_manager: GameManager
+var game_over_panel: GameOverPanel = null  # set by main.gd after both are created
 var _robot_visuals: Dictionary = {}  # player_id -> RobotVisual
 
 # --- Setup ---
@@ -164,3 +165,8 @@ func _on_turn_executed(events: Array) -> void:
 		visual.update_health(robot.health, robot.max_health)
 		if not robot.is_alive():
 			visual.mark_dead()
+
+	# Show game over overlay only after all animations have played out
+	if game_manager.phase == GameManager.GamePhase.GAME_OVER and game_over_panel:
+		await get_tree().create_timer(0.5).timeout  # brief pause before overlay
+		game_over_panel.show_result()
