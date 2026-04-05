@@ -164,10 +164,8 @@ func update_health(hp: int, max_hp: int) -> void:
 		fill_mat.albedo_color = Color(0.9, 0.15, 0.05)
 		fill_mat.emission = Color(0.3, 0.0, 0.0)
 
-## Rotate the robot node to face a given hex direction (0–5).
-## Angle is computed from flat-top hex world offsets so the indicator
-## always points at the neighbouring tile in that direction.
-func set_robot_direction(dir: int) -> void:
+## Smoothly rotate to face a given hex direction.
+func set_robot_direction(dir: int, animate: bool = false) -> void:
 	# Flat-top hex direction deltas → world (x, z) offsets
 	# Dir 0 East=(1,0), 1 NE=(1,-1), 2 NW=(0,-1), 3 W=(-1,0), 4 SW=(-1,1), 5 SE=(0,1)
 	const DQ := [1, 1, 0, -1, -1, 0]
@@ -175,8 +173,43 @@ func set_robot_direction(dir: int) -> void:
 	const HEX_SIZE := 1.2
 	var dx: float = HEX_SIZE * 1.5 * float(DQ[dir])
 	var dz: float = HEX_SIZE * (sqrt(3.0) / 2.0 * float(DQ[dir]) + sqrt(3.0) * float(DR[dir]))
-	# atan2 gives angle from +x toward +z; positive sign for Godot's CW y-rotation
-	rotation.y = atan2(dz, dx) + PI / 2.0
+	var target_angle := atan2(dz, dx) + PI / 2.0
+	if animate:
+		var tween := create_tween()
+		tween.set_ease(Tween.EASE_OUT)
+		tween.set_trans(Tween.TRANS_CUBIC)
+		tween.tween_property(self, "rotation:y", target_angle, 0.28)
+	else:
+		rotation.y = target_angle
+
+## Brief forward-lunge to indicate a blocked move attempt.
+func bump_blocked() -> void:
+	if _is_dead:
+		return
+	var fwd := position + Vector3(sin(rotation.y), 0.0, cos(rotation.y)) * 0.22
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "position", fwd, 0.12)
+	tween.tween_property(self, "position", position, 0.18)
+
+## Scale pulse when this robot fires an attack.
+func flash_attack() -> void:
+	if _is_dead:
+		return
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector3(1.18, 1.18, 1.18), 0.12)
+	tween.tween_property(self, "scale", Vector3.ONE, 0.20)
+
+## Red flash when this robot is hit.
+func flash_hit() -> void:
+	if _is_dead:
+		return
+	var mat := _body_mesh.material_override as StandardMaterial3D
+	var original := robot_color
+	mat.albedo_color = Color(1.0, 0.15, 0.15)
+	var tween := create_tween()
+	tween.tween_property(mat, "albedo_color", original, 0.40)
 
 ## Grey out and stop the robot visually when it dies.
 func mark_dead() -> void:

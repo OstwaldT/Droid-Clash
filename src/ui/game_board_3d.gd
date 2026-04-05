@@ -102,17 +102,50 @@ func _on_player_left(player_id: int) -> void:
 		_robot_visuals[player_id].queue_free()
 		_robot_visuals.erase(player_id)
 
-func _on_turn_executed(_events: Array) -> void:
+func _on_turn_executed(events: Array) -> void:
+	# Step durations (seconds to wait after each event type)
+	const MOVE_STEP    := 0.85   # move tween (0.75s) + gap
+	const TURN_STEP    := 0.45   # rotation tween (0.28s) + gap
+	const ATTACK_STEP  := 0.55   # flash duration + gap
+	const BLOCKED_STEP := 0.35   # bump anim + gap
+
+	for event in events:
+		var pid: int = event.get("playerId", -1)
+		var visual: RobotVisual = _robot_visuals.get(pid)
+		if not visual:
+			continue
+
+		match int(event.get("type", -1)):
+
+			Instructions.InstructionType.MOVE:
+				if event.get("success", false):
+					var to: Vector2i = event.get("to", Vector2i.ZERO)
+					visual.move_to(hex_to_robot_pos(to.x, to.y))
+					await get_tree().create_timer(MOVE_STEP).timeout
+				else:
+					visual.bump_blocked()
+					await get_tree().create_timer(BLOCKED_STEP).timeout
+
+			Instructions.InstructionType.TURN_LEFT, \
+			Instructions.InstructionType.TURN_RIGHT:
+				visual.set_robot_direction(event.get("new_direction", 0), true)
+				await get_tree().create_timer(TURN_STEP).timeout
+
+			Instructions.InstructionType.ATTACK:
+				visual.flash_attack()
+				if event.get("success", false):
+					var target_visual: RobotVisual = _robot_visuals.get(event.get("target", -1))
+					if target_visual:
+						target_visual.flash_hit()
+				await get_tree().create_timer(ATTACK_STEP).timeout
+
+	# Final sync: snap all visuals to authoritative post-round robot state
 	for player_id in game_manager.robots.keys():
 		var robot: Robot = game_manager.robots[player_id]
 		var visual: RobotVisual = _robot_visuals.get(player_id)
 		if not visual:
 			continue
-
-		var target_pos := hex_to_robot_pos(robot.position.x, robot.position.y)
-		visual.move_to(target_pos)
 		visual.set_robot_direction(robot.direction)
 		visual.update_health(robot.health, robot.max_health)
-
 		if not robot.is_alive():
 			visual.mark_dead()
