@@ -23,10 +23,8 @@
 
       <!-- ── WAITING STATE ── -->
       <template v-if="gameStore.turnSubmitted">
-        <h2 class="text-xl font-bold text-center mb-4" :style="{ color: playerStore.playerColor }">Turn Submitted!</h2>
-
-        <!-- Selected cards (read-only) -->
-        <div class="flex justify-center gap-4 mb-6">
+        <!-- Selected cards + locked padlock -->
+        <div class="flex justify-center items-center gap-4 mb-6">
           <div
             v-for="card in gameStore.selectedCards"
             :key="card.id"
@@ -34,6 +32,10 @@
             :style="{ borderColor: playerStore.playerColor, backgroundColor: playerStore.playerColor + '18' }"
           >
             <span class="text-4xl">{{ card.icon }}</span>
+          </div>
+          <!-- Locked padlock -->
+          <div class="slot slot--filled" :style="{ borderColor: playerStore.playerColor, backgroundColor: playerStore.playerColor + '33' }">
+            <span class="text-4xl">🔒</span>
           </div>
         </div>
 
@@ -52,8 +54,8 @@
         </div>
 
         <template v-else>
-          <!-- 3 target slots -->
-          <div class="flex justify-center gap-4 mb-6">
+          <!-- 3 target slots + padlock submit -->
+          <div class="flex justify-center items-center gap-4 mb-6">
             <div
               v-for="(slot, i) in 3"
               :key="i"
@@ -71,10 +73,21 @@
                 </span>
               </transition>
             </div>
+
+            <!-- Padlock — submit button, same size as a slot -->
+            <button
+              class="slot transition-opacity"
+              :class="gameStore.canSubmitTurn ? 'slot--filled cursor-pointer hover:scale-110 active:scale-95' : 'slot--empty opacity-30 cursor-not-allowed'"
+              :style="gameStore.canSubmitTurn ? { borderColor: playerStore.playerColor, backgroundColor: playerStore.playerColor + '33' } : {}"
+              :disabled="!gameStore.canSubmitTurn"
+              @click="submitTurn"
+            >
+              <span class="text-4xl select-none">{{ gameStore.canSubmitTurn ? '🔓' : '🔒' }}</span>
+            </button>
           </div>
 
           <!-- Hand — icon only -->
-          <div class="grid grid-cols-3 gap-3 mb-6">
+          <div class="grid grid-cols-3 gap-3">
             <button
               v-for="(card, idx) in gameStore.availableCards"
               :key="card.id"
@@ -87,16 +100,6 @@
               <span class="text-4xl select-none">{{ card.icon }}</span>
             </button>
           </div>
-
-          <!-- Submit -->
-          <button
-            @click="submitTurn"
-            :disabled="!gameStore.canSubmitTurn"
-            class="w-full py-3 text-white font-bold text-lg rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
-            :style="gameStore.canSubmitTurn ? { backgroundColor: playerStore.playerColor } : { backgroundColor: '#9ca3af' }"
-          >
-            Submit Turn
-          </button>
         </template>
       </template>
     </div>
