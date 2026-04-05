@@ -8,7 +8,7 @@ func _init() -> void:
 	icon        = "🔼"
 	description = "Move your robot one hex in the direction it's facing."
 
-func execute(robot: Robot, grid: HexGrid, _all_robots: Dictionary) -> Dictionary:
+func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 	var from_pos := robot.position
 	var move_result := robot.move_forward(grid, all_robots)
 
