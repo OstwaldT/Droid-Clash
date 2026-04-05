@@ -110,8 +110,8 @@ func generate_map(rng: RandomNumberGenerator = null) -> void:
 	candidates.shuffle()
 
 	# Place holes (~15% of candidates, in organic clusters of 1-3 tiles)
-	var target_holes := max(4, int(candidates.size() * 0.15))
-	var i := 0
+	var target_holes: int = max(4, int(candidates.size() * 0.15))
+	var i: int = 0
 	while holes.size() < target_holes and i < candidates.size():
 		var seed_hex: Vector2i = candidates[i]
 		i += 1
@@ -141,7 +141,7 @@ func generate_map(rng: RandomNumberGenerator = null) -> void:
 		return not is_hole(h)
 	)
 	wall_candidates.shuffle()
-	var target_walls := max(3, int(wall_candidates.size() * 0.10))
+	var target_walls: int = max(3, int(wall_candidates.size() * 0.10))
 	for h in wall_candidates:
 		if obstacles.size() >= target_walls:
 			break
