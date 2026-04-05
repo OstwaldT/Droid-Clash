@@ -14,6 +14,7 @@ var ws_server: WebSocketServer
 var game_manager: GameManager
 var client_to_player: Dictionary = {}  # Maps client_id to player_id
 var rematch_requests: Dictionary = {}  # player_id -> true
+var _countdown_active: bool = false
 
 func _init(server: WebSocketServer, manager: GameManager, tm: TurnManager) -> void:
 	ws_server = server
@@ -35,9 +36,14 @@ func _init(server: WebSocketServer, manager: GameManager, tm: TurnManager) -> vo
 func _on_join_message(client_id: PackedByteArray, message: Dictionary) -> void:
 	var data = message.get("data", {})
 	var player_name = data.get("playerName", "").strip_edges()
-	
+
 	if player_name.is_empty() or player_name.length() > 20:
 		ws_server._send_error(client_id, "INVALID_NAME", "Player name must be 1-20 characters")
+		return
+
+	# Reject if a game is already in progress or countdown has started
+	if _countdown_active or game_manager.phase != GameManager.GamePhase.LOBBY:
+		ws_server._send_error(client_id, "GAME_LOCKED", "A game is already in progress")
 		return
 	
 	# Ensure unique name
@@ -134,15 +140,28 @@ func _on_ready_message(client_id: PackedByteArray, message: Dictionary) -> void:
 		_broadcast_player_list()
 
 		# Check if all players ready
-		var all_ready = true
+		var all_ready := true
 		for player in game_manager.players.values():
 			if not player.get("ready", false):
 				all_ready = false
 				break
 
-		if all_ready and game_manager.players.size() >= 1:
-			game_manager.start_game()
-			_broadcast_game_start()
+		if all_ready and game_manager.players.size() >= 1 and not _countdown_active:
+			_start_countdown()
+
+## Broadcast a 3-second countdown then start the game.
+func _start_countdown() -> void:
+	_countdown_active = true
+	for tick: int in [3, 2, 1]:
+		ws_server.broadcast({
+			"type": "countdown",
+			"timestamp": Time.get_ticks_msec(),
+			"data": { "seconds": tick }
+		})
+		await get_tree().create_timer(1.0).timeout
+	_countdown_active = false
+	game_manager.start_game()
+	_broadcast_game_start()
 
 func _on_leave_message(client_id: PackedByteArray, message: Dictionary) -> void:
 	var player_id = client_to_player.get(client_id, -1)

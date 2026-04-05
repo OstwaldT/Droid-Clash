@@ -1,7 +1,20 @@
 <template>
   <div class="lobby-screen flex flex-col items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md relative overflow-hidden">
       <h1 class="text-4xl font-bold text-center mb-8 text-purple-600">🤖 Droid-Clash</h1>
+
+      <!-- Countdown overlay -->
+      <Transition name="countdown">
+        <div
+          v-if="gameStore.countdown !== null"
+          class="absolute inset-0 bg-white/90 flex flex-col items-center justify-center z-10 rounded-lg"
+        >
+          <div :key="gameStore.countdown" class="text-9xl font-black text-purple-600 countdown-number">
+            {{ gameStore.countdown }}
+          </div>
+          <p class="text-gray-500 font-semibold mt-4 text-lg">Get ready!</p>
+        </div>
+      </Transition>
 
       <div v-if="!playerStore.isConnected" class="space-y-6">
         <div>
@@ -154,4 +167,17 @@ const readyUp = () => {
 .lobby-screen {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
+
+/* Countdown number: pops in with a scale bounce each tick */
+.countdown-number {
+  animation: countdown-pop 0.35s cubic-bezier(0.34, 1.8, 0.64, 1);
+}
+@keyframes countdown-pop {
+  from { transform: scale(0.3); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.countdown-enter-active { transition: opacity 0.2s; }
+.countdown-leave-active { transition: opacity 0.15s; }
+.countdown-enter-from, .countdown-leave-to { opacity: 0; }
 </style>

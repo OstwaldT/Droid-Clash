@@ -30,6 +30,7 @@ func _ready() -> void:
 	add_child(ws_server)
 
 	message_handler = MessageHandler.new(ws_server, game_manager, turn_manager)
+	add_child(message_handler)  # must be in scene tree for timer awaits
 
 	# 3D game board
 	game_board = GameBoard3D.new()

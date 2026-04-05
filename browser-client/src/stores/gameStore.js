@@ -28,6 +28,9 @@ export const useGameStore = defineStore('game', () => {
   // Player IDs who have requested a rematch (shown on game-over screen)
   const rematchPlayers = ref([])
 
+  // Countdown value (3/2/1) shown in the lobby before a game starts; null = no countdown
+  const countdown = ref(null)
+
   // Actions
   const setGameState = (state) => {
     gameId.value = state.gameId
@@ -87,6 +90,7 @@ export const useGameStore = defineStore('game', () => {
     playerStatuses.value = {}
     turnOrder.value = []
     rematchPlayers.value = []
+    countdown.value = null
   }
 
   const setTurnSubmitted = (val) => {
@@ -132,6 +136,7 @@ export const useGameStore = defineStore('game', () => {
     playerStatuses,
     turnOrder,
     rematchPlayers,
+    countdown,
     setGameState,
     setAvailableCards,
     setTurnSubmitted,

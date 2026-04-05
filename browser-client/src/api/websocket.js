@@ -148,6 +148,9 @@ class WebSocketClient {
       case "rematch_status":
         this.handleRematchStatus(data);
         break;
+      case "countdown":
+        this.handleCountdown(data);
+        break;
       case "error":
         this.handleError(data);
         break;
@@ -168,6 +171,7 @@ class WebSocketClient {
 
   handleGameStart(data) {
     const gameStore = useGameStore();
+    gameStore.countdown = null;  // clear any active countdown
     gameStore.rematchPlayers = [];  // clear any stale rematch state
     gameStore.setGameState({
       gameId: data.gameId,
@@ -224,6 +228,11 @@ class WebSocketClient {
     if (data.playerStatuses) {
       gameStore.setPlayerStatuses(data.playerStatuses);
     }
+  }
+
+  handleCountdown(data) {
+    const gameStore = useGameStore();
+    gameStore.countdown = data.seconds;
   }
 
   handleRematchStatus(data) {
