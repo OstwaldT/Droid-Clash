@@ -1,18 +1,9 @@
 <template>
   <div class="card-selection flex flex-col items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl">
-
-      <!-- Player identity bar, colored to this player's assigned color -->
-      <div
-        class="flex items-center gap-3 mb-3 px-4 py-2 rounded-lg"
-        :style="{ backgroundColor: playerStore.playerColor + '22', borderLeft: `4px solid ${playerStore.playerColor}` }"
-      >
-        <span
-          class="inline-block w-4 h-4 rounded-full flex-shrink-0"
-          :style="{ backgroundColor: playerStore.playerColor }"
-        ></span>
-        <span class="font-bold text-gray-800">{{ playerStore.playerName }}</span>
-      </div>
+    <div
+      class="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl"
+      :style="{ border: `3px solid ${playerStore.playerColor}` }"
+    >
 
       <!-- Turn order strip -->
       <TurnOrderDisplay class="mb-4" />
