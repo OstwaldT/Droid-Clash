@@ -171,6 +171,9 @@ class WebSocketClient {
     if (data.playerStatuses) {
       gameStore.setPlayerStatuses(data.playerStatuses);
     }
+    if (data.turnOrder) {
+      gameStore.turnOrder = data.turnOrder;
+    }
     // Hand arrives via a separate hand_update message
   }
 
@@ -189,6 +192,9 @@ class WebSocketClient {
     gameStore.resetRoundState();
     if (data.playerStatuses) {
       gameStore.setPlayerStatuses(data.playerStatuses);
+    }
+    if (data.turnOrder) {
+      gameStore.turnOrder = data.turnOrder;
     }
   }
 

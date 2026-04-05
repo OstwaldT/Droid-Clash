@@ -192,7 +192,8 @@ func _broadcast_game_start() -> void:
 			"phase": "card_selection",
 			"robots": game_state["robots"],
 			"turnTimeoutSeconds": 30,
-			"playerStatuses": _build_player_statuses()
+			"playerStatuses": _build_player_statuses(),
+			"turnOrder": game_manager.turn_manager.get_priority_order()
 		}
 	})
 
@@ -248,7 +249,8 @@ func _on_turn_executed(events: Array) -> void:
 			"currentPhase": "card_selection",
 			"robots": game_state["robots"],
 			"events": _serialize_events(events),
-			"playerStatuses": _build_player_statuses("selecting")
+			"playerStatuses": _build_player_statuses("selecting"),
+			"turnOrder": game_manager.turn_manager.get_priority_order()
 		}
 	})
 

@@ -26,6 +26,10 @@ func register_player(player_id: int) -> void:
 func unregister_player(player_id: int) -> void:
 	_priority_order.erase(player_id)
 
+## Return the execution order for the upcoming round (copy to prevent mutation).
+func get_priority_order() -> Array:
+	return _priority_order.duplicate()
+
 ## Submit cards for a player's turn
 func submit_turn(player_id: int, card_ids: Array) -> bool:
 	if player_id not in game_manager.robots:

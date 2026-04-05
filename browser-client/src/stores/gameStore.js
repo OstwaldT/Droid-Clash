@@ -22,6 +22,9 @@ export const useGameStore = defineStore('game', () => {
   // Per-player status map: { [playerId]: 'selecting' | 'submitted' | 'acting' }
   const playerStatuses = ref({})
 
+  // Execution order for the upcoming round: array of player IDs
+  const turnOrder = ref([])
+
   // Actions
   const setGameState = (state) => {
     gameId.value = state.gameId
@@ -110,6 +113,7 @@ export const useGameStore = defineStore('game', () => {
     selectedCards,
     turnSubmitted,
     playerStatuses,
+    turnOrder,
     setGameState,
     setAvailableCards,
     setTurnSubmitted,

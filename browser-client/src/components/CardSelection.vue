@@ -4,7 +4,7 @@
 
       <!-- Player identity bar, colored to this player's assigned color -->
       <div
-        class="flex items-center gap-3 mb-6 px-4 py-2 rounded-lg"
+        class="flex items-center gap-3 mb-3 px-4 py-2 rounded-lg"
         :style="{ backgroundColor: playerStore.playerColor + '22', borderLeft: `4px solid ${playerStore.playerColor}` }"
       >
         <span
@@ -13,6 +13,9 @@
         ></span>
         <span class="font-bold text-gray-800">{{ playerStore.playerName }}</span>
       </div>
+
+      <!-- Turn order strip -->
+      <TurnOrderDisplay class="mb-4" />
 
       <!-- Waiting state: turn submitted, round not yet resolved -->
       <template v-if="gameStore.turnSubmitted">
@@ -91,6 +94,7 @@
 import { useGameStore } from '@/stores/gameStore'
 import { usePlayerStore } from '@/stores/playerStore'
 import websocket from '@/api/websocket'
+import TurnOrderDisplay from '@/components/TurnOrderDisplay.vue'
 
 const gameStore = useGameStore()
 const playerStore = usePlayerStore()
