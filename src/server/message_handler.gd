@@ -83,7 +83,7 @@ func _on_turn_submit_message(client_id: PackedByteArray, message: Dictionary) ->
 		return
 
 	# Validate that all submitted instance IDs are in the player's current hand
-	var valid_hand_ids := game_manager.player_decks[player_id].get_hand_instance_ids()
+	var valid_hand_ids: Array = game_manager.player_decks[player_id].get_hand_instance_ids()
 	var seen := {}
 	for inst_id in card_ids:
 		if inst_id not in valid_hand_ids:
