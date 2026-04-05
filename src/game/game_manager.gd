@@ -61,6 +61,8 @@ func add_player(player_id: int, player_name: String, client_id: PackedByteArray)
 	var start_pos := grid.get_random_valid_hex()
 	robots[player_id] = Robot.new(player_id, player_name, start_pos, color)
 	player_decks[player_id] = Deck.new()
+	if turn_manager:
+		turn_manager.register_player(player_id)
 	
 	player_joined.emit(player_id, player_name)
 	print("Player %d (%s) joined" % [player_id, player_name])
@@ -72,6 +74,8 @@ func remove_player(player_id: int) -> void:
 		players.erase(player_id)
 		robots.erase(player_id)
 		player_decks.erase(player_id)
+		if turn_manager:
+			turn_manager.unregister_player(player_id)
 		player_left.emit(player_id)
 		print("Player %d left" % player_id)
 		
