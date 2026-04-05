@@ -131,7 +131,8 @@ func are_all_turns_submitted() -> bool:
 func reset_turn_submissions() -> void:
 	for player_id in players.keys():
 		players[player_id]["submitted"] = false
-		players[player_id]["submitted_instance_ids"] = []
+		# submitted_instance_ids is NOT cleared here — resolve_and_redraw_player_hand
+		# reads them AFTER this runs (via the turn_executed signal) and clears them itself.
 
 ## Look up the instruction type ID for a card instance in a player's current hand.
 func get_card_type_id(player_id: int, instance_id: int) -> int:
@@ -156,6 +157,7 @@ func resolve_and_redraw_player_hand(player_id: int) -> Array:
 		return []
 	var played: Array = players[player_id].get("submitted_instance_ids", [])
 	deck.resolve_hand(played)
+	players[player_id]["submitted_instance_ids"] = []  # clear after use
 	return deck.draw_hand()
 
 func to_dict() -> Dictionary:

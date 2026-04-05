@@ -67,7 +67,12 @@ func _on_turn_submit_message(client_id: PackedByteArray, message: Dictionary) ->
 	if player_id == -1:
 		ws_server._send_error(client_id, "PLAYER_NOT_FOUND", "Player not found")
 		return
-	
+
+	# Reject if already submitted this round
+	if game_manager.players.get(player_id, {}).get("submitted", false):
+		ws_server._send_error(client_id, "ALREADY_SUBMITTED", "Turn already submitted")
+		return
+
 	var data = message.get("data", {})
 	var card_ids = data.get("cardIds", [])
 	var turn_number = data.get("turnNumber", -1)
