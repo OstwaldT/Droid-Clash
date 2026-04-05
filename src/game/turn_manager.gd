@@ -68,7 +68,7 @@ func execute_round() -> Array:
 
 	# Rotate priority: first player this round goes last next round
 	if _priority_order.size() > 1:
-		var first := _priority_order[0]
+		var first: int = _priority_order[0]
 		_priority_order.remove_at(0)
 		_priority_order.append(first)
 
