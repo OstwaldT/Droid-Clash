@@ -19,9 +19,10 @@ var players: Dictionary = {}  # player_id -> {"name": str, "client_id": PackedBy
 var robots: Dictionary = {}   # player_id -> Robot
 var grid: HexGrid
 var turn_queue: Array = []
+var turn_manager: TurnManager = null  # set by main.gd after TurnManager is created
 
 func _init() -> void:
-	grid = HexGrid.new(10, 10)
+	grid = HexGrid.new(5)  # hexagonal board, side length 5 (radius 4, 61 tiles)
 	set_process(true)
 
 func add_player(player_id: int, player_name: String, client_id: PackedByteArray) -> bool:
@@ -34,8 +35,8 @@ func add_player(player_id: int, player_name: String, client_id: PackedByteArray)
 		"submitted": false
 	}
 	
-	# Create robot at random starting position
-	var start_pos = Vector2i(randi_range(0, 9), randi_range(0, 9))
+	# Spawn robot at a random valid position on the hex board
+	var start_pos := grid.get_random_valid_hex()
 	robots[player_id] = Robot.new(player_id, player_name, start_pos)
 	
 	player_joined.emit(player_id, player_name)
@@ -82,11 +83,20 @@ func get_all_players() -> Array:
 			result.append(robot.to_dict())
 	return result
 
-func submit_turn(player_id: int, _card_ids: Array) -> bool:
+func submit_turn(player_id: int, card_ids: Array) -> bool:
 	if player_id not in players:
 		return false
-	
+
 	players[player_id]["submitted"] = true
+
+	# Forward card selection to TurnManager
+	if turn_manager:
+		turn_manager.submit_turn(player_id, card_ids)
+
+	# Execute the round as soon as every alive player has submitted
+	if turn_manager and are_all_turns_submitted():
+		turn_manager.execute_round()
+
 	return true
 
 func are_all_turns_submitted() -> bool:
@@ -104,8 +114,7 @@ func to_dict() -> Dictionary:
 		"gameId": "game_001",
 		"phase": GamePhase.keys()[phase],
 		"turnNumber": current_turn,
-		"boardWidth": grid.width,
-		"boardHeight": grid.height,
+		"boardRadius": grid.radius,
 		"robots": get_all_players(),
 		"playerCount": players.size(),
 		"maxPlayers": max_players

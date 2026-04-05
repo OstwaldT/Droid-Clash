@@ -2,7 +2,9 @@ extends Node
 
 class_name HexGrid
 
-## Hexagonal grid system using axial coordinates (q, r)
+## Hexagonal grid system using axial coordinates (q, r).
+## The board is a regular hexagon: max(|q|, |r|, |q+r|) <= radius,
+## where radius = side_length - 1.
 ## Reference: https://www.redblobgames.com/grids/hexagons/
 
 const DIRECTIONS = [
@@ -14,13 +16,11 @@ const DIRECTIONS = [
 	Vector2i(0, 1)     # 5: Southeast
 ]
 
-var width: int
-var height: int
+var radius: int       # max hex distance from centre (= side_length - 1)
 var obstacles: Array = []
 
-func _init(grid_width: int = 10, grid_height: int = 10) -> void:
-	width = grid_width
-	height = grid_height
+func _init(side_length: int = 5) -> void:
+	radius = side_length - 1
 
 ## Get distance between two hex coordinates
 func get_distance(from: Vector2i, to: Vector2i) -> int:
@@ -38,9 +38,26 @@ func get_neighbors(hex: Vector2i) -> Array:
 			neighbors.append(neighbor)
 	return neighbors
 
-## Check if a coordinate is valid within grid bounds
+## Check if a coordinate is valid within the hexagonal board boundary.
 func is_valid(hex: Vector2i) -> bool:
-	return hex.x >= 0 and hex.x < width and hex.y >= 0 and hex.y < height
+	return abs(hex.x) <= radius and abs(hex.y) <= radius and abs(hex.x + hex.y) <= radius
+
+## Return every valid hex on the board (61 tiles for side_length=5).
+func get_all_hexes() -> Array:
+	var result: Array = []
+	for q in range(-radius, radius + 1):
+		var r_min: int = max(-radius, -q - radius)
+		var r_max: int = min(radius, -q + radius)
+		for r in range(r_min, r_max + 1):
+			result.append(Vector2i(q, r))
+	return result
+
+## Pick a random valid, walkable hex (uniform distribution).
+func get_random_valid_hex() -> Vector2i:
+	var hexes := get_all_hexes()
+	# Filter out obstacles
+	var walkable: Array = hexes.filter(func(h): return not is_obstacle(h))
+	return walkable[randi() % walkable.size()]
 
 ## Check if a hex is an obstacle
 func is_obstacle(hex: Vector2i) -> bool:

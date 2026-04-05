@@ -28,11 +28,12 @@ func execute_instruction(instruction_id: int, robot: Robot, grid: HexGrid, all_r
 	
 	match card["type"]:
 		InstructionType.MOVE:
+			var from_pos := robot.position  # capture BEFORE the move mutates position
 			result["success"] = robot.move_forward(grid)
 			result["message"] = "Move forward" if result["success"] else "Cannot move - blocked"
 			if result["success"]:
-				result["from"] = Vector2i(robot.position.x, robot.position.y)
-				result["to"] = Vector2i(robot.position.x, robot.position.y)
+				result["from"] = from_pos
+				result["to"] = robot.position
 		
 		InstructionType.TURN_LEFT:
 			robot.turn_left()

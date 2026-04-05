@@ -11,19 +11,20 @@ var ws_server: WebSocketServer
 var game_manager: GameManager
 var client_to_player: Dictionary = {}  # Maps client_id to player_id
 
-func _init(server: WebSocketServer, manager: GameManager) -> void:
+func _init(server: WebSocketServer, manager: GameManager, tm: TurnManager) -> void:
 	ws_server = server
 	game_manager = manager
-	
+
 	# Register message handlers
 	ws_server.add_message_handler("join", _on_join_message)
 	ws_server.add_message_handler("turn_submit", _on_turn_submit_message)
 	ws_server.add_message_handler("ready", _on_ready_message)
 	ws_server.add_message_handler("leave", _on_leave_message)
-	
+
 	# Connect signals
 	ws_server.client_connected.connect(_on_client_connected)
 	ws_server.client_disconnected.connect(_on_client_disconnected)
+	tm.turn_executed.connect(_on_turn_executed)
 
 func _on_join_message(client_id: PackedByteArray, message: Dictionary) -> void:
 	var data = message.get("data", {})
@@ -157,14 +158,13 @@ func _broadcast_player_list() -> void:
 
 func _broadcast_game_start() -> void:
 	var game_state = game_manager.to_dict()
-	
+
 	ws_server.broadcast({
 		"type": "game_start",
 		"timestamp": Time.get_ticks_msec(),
 		"data": {
 			"gameId": game_state["gameId"],
-			"boardWidth": game_state["boardWidth"],
-			"boardHeight": game_state["boardHeight"],
+			"boardRadius": game_state["boardRadius"],
 			"turnNumber": game_state["turnNumber"],
 			"phase": "card_selection",
 			"robots": game_state["robots"],
@@ -177,3 +177,47 @@ func _broadcast_game_start() -> void:
 			"turnTimeoutSeconds": 30
 		}
 	})
+
+func _on_turn_executed(events: Array) -> void:
+	var game_state := game_manager.to_dict()
+
+	ws_server.broadcast({
+		"type": "game_state_update",
+		"timestamp": Time.get_ticks_msec(),
+		"data": {
+			"turnNumber": game_state["turnNumber"],
+			"currentPhase": "card_selection",
+			"robots": game_state["robots"],
+			"events": _serialize_events(events)
+		}
+	})
+
+	# Check win condition after every round
+	var alive := game_manager.get_alive_players()
+	if alive.size() <= 1 and game_manager.phase == GameManager.GamePhase.PLAYING:
+		game_manager.end_game()
+		var winner_id: int = alive[0] if alive.size() == 1 else -1
+		var winner_robot: Robot = game_manager.robots.get(winner_id)
+		ws_server.broadcast({
+			"type": "game_over",
+			"timestamp": Time.get_ticks_msec(),
+			"data": {
+				"winner": winner_id,
+				"winnerName": winner_robot.bot_name if winner_robot else "No winner",
+				"finalPlayers": game_state["robots"]
+			}
+		})
+
+## Serialize event array for JSON — converts Vector2i values to {q, r} dicts.
+func _serialize_events(events: Array) -> Array:
+	var out: Array = []
+	for event in events:
+		var e: Dictionary = {}
+		for key in event.keys():
+			var val = event[key]
+			if val is Vector2i:
+				e[key] = {"q": val.x, "r": val.y}
+			else:
+				e[key] = val
+		out.append(e)
+	return out

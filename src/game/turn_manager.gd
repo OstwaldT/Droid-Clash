@@ -2,7 +2,7 @@ extends Node
 
 class_name TurnManager
 
-signal turn_executed
+signal turn_executed(events: Array)
 signal round_complete
 
 var game_manager: GameManager
@@ -27,11 +27,13 @@ func submit_turn(player_id: int, card_ids: Array) -> bool:
 func execute_round() -> Array:
 	var events: Array = []
 	
-	# Get alive players in submission order
+	# Collect alive players then shuffle so no one gets an advantage
+	# from submitting first
 	var players_to_execute: Array = []
 	for player_id in card_submissions.keys():
 		if game_manager.robots[player_id].is_alive():
 			players_to_execute.append(player_id)
+	players_to_execute.shuffle()
 	
 	# Execute each player's cards in sequence
 	for player_id in players_to_execute:
@@ -55,10 +57,10 @@ func execute_round() -> Array:
 	card_submissions.clear()
 	game_manager.reset_turn_submissions()
 	game_manager.current_turn += 1
-	
-	turn_executed.emit()
+
+	turn_executed.emit(events)
 	round_complete.emit()
-	
+
 	return events
 
 ## Check if round is ready to execute
