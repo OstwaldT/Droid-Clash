@@ -12,7 +12,7 @@
             id="playerName"
             v-model="playerName"
             type="text"
-            placeholder="Enter your name"
+            placeholder="e.g. Iron Bot"
             maxlength="20"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
             @keyup.enter="joinGame"
@@ -89,7 +89,26 @@ import websocket from '@/api/websocket'
 const playerStore = usePlayerStore()
 const gameStore = useGameStore()
 
-const playerName = ref('')
+const FIRST_WORDS = [
+  'Iron', 'Rusty', 'Chrome', 'Steel', 'Nano', 'Cyber', 'Plasma', 'Turbo',
+  'Volt', 'Sonic', 'Atomic', 'Cobalt', 'Neon', 'Laser', 'Flux', 'Binary',
+  'Rogue', 'Shadow', 'Titan', 'Hyper', 'Omega', 'Delta', 'Sigma', 'Blazing',
+  'Hex', 'Pixel', 'Circuit', 'Quantum', 'Photon', 'Static',
+]
+const LAST_WORDS = [
+  'Unit', 'Bot', 'Core', 'Rex', 'Prime', 'Droid', 'Mech', 'Rig',
+  'Claw', 'Spike', 'Storm', 'Pulse', 'Fist', 'Gear', 'Blade', 'Crusher',
+  'Zapper', 'Sentinel', 'Wrecker', 'Hammer', 'Spark', 'Bolt', 'Drone',
+  'Shell', 'Vortex', 'Forge', 'Crawler', 'Frame', 'Plating', 'Cannon',
+]
+
+function randomRobotName() {
+  const first = FIRST_WORDS[Math.floor(Math.random() * FIRST_WORDS.length)]
+  const last  = LAST_WORDS[Math.floor(Math.random() * LAST_WORDS.length)]
+  return `${first} ${last}`
+}
+
+const playerName = ref(randomRobotName())
 const isConnecting = ref(false)
 const connectionError = ref('')
 
