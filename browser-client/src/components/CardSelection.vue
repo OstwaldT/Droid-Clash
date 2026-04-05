@@ -34,7 +34,6 @@
       <!-- Normal card selection state -->
       <template v-else>
         <h1 class="text-3xl font-bold text-center mb-2" :style="{ color: playerStore.playerColor }">Select Your Cards</h1>
-        <p class="text-center text-gray-600 mb-6">Choose 3 cards for this turn ({{ gameStore.selectedCards.length }}/3)</p>
 
         <!-- Loading state while waiting for new hand after a round -->
         <div v-if="gameStore.availableCards.length === 0" class="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
