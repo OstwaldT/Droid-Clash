@@ -241,7 +241,7 @@ func _serialize_events(events: Array) -> Array:
 
 ## Send a player their current 6-card hand as a private message.
 func _send_hand_update(player_id: int) -> void:
-	var player_info := game_manager.players.get(player_id, {})
+	var player_info: Dictionary = game_manager.players.get(player_id, {})
 	var client_id = player_info.get("client_id")
 	if not client_id:
 		return
