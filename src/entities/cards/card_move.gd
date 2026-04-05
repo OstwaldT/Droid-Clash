@@ -10,7 +10,7 @@ func _init() -> void:
 
 func execute(robot: Robot, grid: HexGrid, _all_robots: Dictionary) -> Dictionary:
 	var from_pos := robot.position
-	var move_result := robot.move_forward(grid)
+	var move_result := robot.move_forward(grid, all_robots)
 
 	match move_result:
 		"moved":

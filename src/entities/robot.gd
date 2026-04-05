@@ -20,12 +20,15 @@ func _init(pid: int, pname: String, start_pos: Vector2i, pcolor: String = "#ffff
 
 ## Execute a move instruction.
 ## Returns "moved", "blocked", or "fell" (stepped off the grid).
-func move_forward(grid: HexGrid) -> String:
+## all_robots: Dictionary of player_id -> Robot, used to detect occupancy.
+func move_forward(grid: HexGrid, all_robots: Dictionary = {}) -> String:
 	var next_pos = grid.get_neighbor_in_direction(position, direction)
 	if not grid.is_valid(next_pos):
-		# Robot walked off the edge — instant death
 		take_damage(max_health)
 		return "fell"
+	for other in all_robots.values():
+		if other != self and other.is_alive() and other.position == next_pos:
+			return "blocked"
 	if grid.is_walkable(next_pos):
 		position = next_pos
 		return "moved"
