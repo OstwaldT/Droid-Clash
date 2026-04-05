@@ -134,7 +134,7 @@ func move_to(world_pos: Vector3, animate: bool = true) -> void:
 		var tween = create_tween()
 		tween.set_ease(Tween.EASE_IN_OUT)
 		tween.set_trans(Tween.TRANS_CUBIC)
-		tween.tween_property(self, "position", world_pos, 0.45)
+		tween.tween_property(self, "position", world_pos, 0.75)
 	else:
 		position = world_pos
 
@@ -175,8 +175,8 @@ func set_robot_direction(dir: int) -> void:
 	const HEX_SIZE := 1.2
 	var dx: float = HEX_SIZE * 1.5 * float(DQ[dir])
 	var dz: float = HEX_SIZE * (sqrt(3.0) / 2.0 * float(DQ[dir]) + sqrt(3.0) * float(DR[dir]))
-	# atan2 gives angle from +x toward +z; negate for Godot's CCW-positive y-rotation
-	rotation.y = -atan2(dz, dx) + PI / 2.0
+	# atan2 gives angle from +x toward +z; positive sign for Godot's CW y-rotation
+	rotation.y = atan2(dz, dx) + PI / 2.0
 
 ## Grey out and stop the robot visually when it dies.
 func mark_dead() -> void:
