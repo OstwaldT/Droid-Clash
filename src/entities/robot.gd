@@ -28,13 +28,11 @@ func move_forward(grid: HexGrid) -> bool:
 
 ## Turn left (counter-clockwise)
 func turn_left() -> void:
-	direction = (direction - 1) % 6
-	if direction < 0:
-		direction += 6
+	direction = (direction + 1) % 6
 
 ## Turn right (clockwise)
 func turn_right() -> void:
-	direction = (direction + 1) % 6
+	direction = (direction - 1 + 6) % 6
 
 ## Take damage
 func take_damage(amount: int) -> void:
