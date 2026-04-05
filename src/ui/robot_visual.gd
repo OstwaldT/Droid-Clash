@@ -185,10 +185,13 @@ func set_robot_direction(dir: int, animate: bool = false) -> void:
 	var dz: float = HEX_SIZE * (sqrt(3.0) / 2.0 * float(DQ[dir]) + sqrt(3.0) * float(DR[dir]))
 	var target_angle := atan2(dx, dz)
 	if animate:
+		# Compute the shortest angular delta so the robot never spins more than
+		# 180° (avoids the "full circle" artefact when wrapping near ±PI).
+		var delta := fmod(target_angle - rotation.y + TAU + PI, TAU) - PI
 		var tween := create_tween()
 		tween.set_ease(Tween.EASE_OUT)
 		tween.set_trans(Tween.TRANS_CUBIC)
-		tween.tween_property(self, "rotation:y", target_angle, 0.28)
+		tween.tween_property(self, "rotation:y", rotation.y + delta, 0.28)
 	else:
 		rotation.y = target_angle
 
