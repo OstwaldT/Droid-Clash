@@ -304,6 +304,15 @@ func _broadcast_player_statuses(override_status: String = "") -> void:
 		"data": {"playerStatuses": _build_player_statuses(override_status)}
 	})
 
+## Called by GameBoard3D after all round animations finish.
+## Signals clients that they may now transition to the next phase.
+func _broadcast_round_ready() -> void:
+	ws_server.broadcast({
+		"type": "round_ready",
+		"timestamp": Time.get_ticks_msec(),
+		"data": {}
+	})
+
 ## Called when all players have submitted and the round is about to execute.
 func _on_round_starting() -> void:
 	_broadcast_player_statuses("acting")

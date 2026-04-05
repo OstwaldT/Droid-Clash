@@ -12,6 +12,8 @@ class WebSocketClient {
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
     this.messageHandlers = {};
+    // Phase buffered from game_state_update; applied only when round_ready arrives
+    this.pendingPhase = null;
   }
 
   connect() {
@@ -140,6 +142,9 @@ class WebSocketClient {
       case "player_statuses_update":
         this.handlePlayerStatusesUpdate(data);
         break;
+      case "round_ready":
+        this.handleRoundReady();
+        break;
       case "error":
         this.handleError(data);
         break;
@@ -186,16 +191,28 @@ class WebSocketClient {
     const gameStore = useGameStore();
     gameStore.robots = data.robots;
     gameStore.turnNumber = data.turnNumber;
-    gameStore.phase = data.currentPhase || "card_selection";
-    // Reset selection state only — availableCards already holds the fresh hand
-    // that arrived via hand_update (sent by server before this message)
-    gameStore.resetRoundState();
+    // Buffer the phase — don't switch yet; wait for round_ready (sent after
+    // board animations complete) so players stay on the waiting screen during animation.
+    this.pendingPhase = data.currentPhase || "card_selection";
     if (data.playerStatuses) {
       gameStore.setPlayerStatuses(data.playerStatuses);
     }
     if (data.turnOrder) {
       gameStore.turnOrder = data.turnOrder;
     }
+  }
+
+  // Called when the server signals that all board animations have finished.
+  // Now it's safe to switch phase and let players act.
+  handleRoundReady() {
+    const gameStore = useGameStore();
+    if (this.pendingPhase) {
+      gameStore.phase = this.pendingPhase;
+      this.pendingPhase = null;
+    }
+    // Reset selection state — availableCards already holds the new hand
+    // received via hand_update before game_state_update arrived.
+    gameStore.resetRoundState();
   }
 
   handlePlayerStatusesUpdate(data) {

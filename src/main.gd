@@ -35,6 +35,8 @@ func _ready() -> void:
 	game_board = GameBoard3D.new()
 	add_child(game_board)
 	game_board.setup(game_manager, turn_manager)
+	# Wire board animation-complete signal to message_handler so it can send round_ready
+	game_board.round_display_complete.connect(message_handler._broadcast_round_ready)
 
 	_setup_3d_scene()
 

@@ -2,6 +2,10 @@ extends Node3D
 
 class_name GameBoard3D
 
+## Emitted after all round animations have fully played out.
+## MessageHandler listens to this to send round_ready to clients.
+signal round_display_complete
+
 ## Hex tile geometry constants (flat-top orientation)
 const HEX_SIZE: float = 1.2      # circumradius
 const HEX_HEIGHT: float = 0.15   # tile thickness
@@ -170,3 +174,6 @@ func _on_turn_executed(events: Array) -> void:
 	if game_manager.phase == GameManager.GamePhase.GAME_OVER and game_over_panel:
 		await get_tree().create_timer(0.5).timeout  # brief pause before overlay
 		game_over_panel.show_result()
+
+	# Notify message_handler that animations are done — it will send round_ready to clients
+	round_display_complete.emit()
