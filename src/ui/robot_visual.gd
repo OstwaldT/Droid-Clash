@@ -246,6 +246,9 @@ func fall_off(edge_pos: Vector3) -> void:
 	await fall.finished
 
 	visible = false
+
+## Grey out and stop the robot visually when it dies (combat damage, not fall).
+func mark_dead() -> void:
 	if _is_dead:
 		return
 	_is_dead = true
