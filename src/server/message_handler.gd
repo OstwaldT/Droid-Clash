@@ -25,6 +25,7 @@ func _init(server: WebSocketServer, manager: GameManager, tm: TurnManager) -> vo
 	ws_server.client_connected.connect(_on_client_connected)
 	ws_server.client_disconnected.connect(_on_client_disconnected)
 	tm.turn_executed.connect(_on_turn_executed)
+	manager.round_starting.connect(_on_round_starting)
 
 func _on_join_message(client_id: PackedByteArray, message: Dictionary) -> void:
 	var data = message.get("data", {})
@@ -110,6 +111,8 @@ func _on_turn_submit_message(client_id: PackedByteArray, message: Dictionary) ->
 				"message": "Turn submitted"
 			}
 		})
+		# Broadcast updated statuses so other clients see this player as "submitted"
+		_broadcast_player_statuses()
 
 func _on_ready_message(client_id: PackedByteArray, message: Dictionary) -> void:
 	var player_id = client_to_player.get(client_id, -1)
@@ -185,7 +188,8 @@ func _broadcast_game_start() -> void:
 			"turnNumber": game_state["turnNumber"],
 			"phase": "card_selection",
 			"robots": game_state["robots"],
-			"turnTimeoutSeconds": 30
+			"turnTimeoutSeconds": 30,
+			"playerStatuses": _build_player_statuses()
 		}
 	})
 
@@ -204,7 +208,8 @@ func _on_turn_executed(events: Array) -> void:
 			"turnNumber": game_state["turnNumber"],
 			"currentPhase": "card_selection",
 			"robots": game_state["robots"],
-			"events": _serialize_events(events)
+			"events": _serialize_events(events),
+			"playerStatuses": _build_player_statuses("selecting")
 		}
 	})
 
@@ -255,3 +260,31 @@ func _send_hand_update(player_id: int) -> void:
 		"timestamp": Time.get_ticks_msec(),
 		"data": {"hand": game_manager.get_player_hand_data(player_id)}
 	})
+
+## Build a status array for all connected players.
+## Pass override_status to force a specific status for everyone (e.g. "acting").
+## Otherwise status is derived from each player's submitted flag.
+func _build_player_statuses(override_status: String = "") -> Array:
+	var statuses: Array = []
+	for player_id in game_manager.players.keys():
+		var status: String
+		if override_status != "":
+			status = override_status
+		elif game_manager.players[player_id].get("submitted", false):
+			status = "submitted"
+		else:
+			status = "selecting"
+		statuses.append({"playerId": player_id, "status": status})
+	return statuses
+
+## Broadcast current player statuses to all clients.
+func _broadcast_player_statuses(override_status: String = "") -> void:
+	ws_server.broadcast({
+		"type": "player_statuses_update",
+		"timestamp": Time.get_ticks_msec(),
+		"data": {"playerStatuses": _build_player_statuses(override_status)}
+	})
+
+## Called when all players have submitted and the round is about to execute.
+func _on_round_starting() -> void:
+	_broadcast_player_statuses("acting")

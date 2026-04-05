@@ -8,6 +8,7 @@ signal player_joined(player_id: int, player_name: String)
 signal player_left(player_id: int)
 signal player_ready(player_id: int)
 signal turn_changed(turn_number: int)
+signal round_starting
 
 enum GamePhase { LOBBY, PLAYING, GAME_OVER }
 
@@ -118,6 +119,7 @@ func submit_turn(player_id: int, instance_ids: Array) -> bool:
 
 	# Execute the round as soon as every alive player has submitted
 	if turn_manager and are_all_turns_submitted():
+		round_starting.emit()
 		turn_manager.execute_round()
 
 	return true

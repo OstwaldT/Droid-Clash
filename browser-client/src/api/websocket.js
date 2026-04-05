@@ -137,6 +137,9 @@ class WebSocketClient {
       case "game_state_update":
         this.handleGameStateUpdate(data);
         break;
+      case "player_statuses_update":
+        this.handlePlayerStatusesUpdate(data);
+        break;
       case "error":
         this.handleError(data);
         break;
@@ -165,6 +168,9 @@ class WebSocketClient {
       players: data.robots.map((r) => ({ ...r, name: r.name })),
       robots: data.robots,
     });
+    if (data.playerStatuses) {
+      gameStore.setPlayerStatuses(data.playerStatuses);
+    }
     // Hand arrives via a separate hand_update message
   }
 
@@ -179,6 +185,16 @@ class WebSocketClient {
     gameStore.turnNumber = data.turnNumber;
     gameStore.phase = data.currentPhase || "card_selection";
     gameStore.clearSelectedCards(); // clears cards + resets turnSubmitted for next turn
+    if (data.playerStatuses) {
+      gameStore.setPlayerStatuses(data.playerStatuses);
+    }
+  }
+
+  handlePlayerStatusesUpdate(data) {
+    const gameStore = useGameStore();
+    if (data.playerStatuses) {
+      gameStore.setPlayerStatuses(data.playerStatuses);
+    }
   }
 
   handleError(data) {

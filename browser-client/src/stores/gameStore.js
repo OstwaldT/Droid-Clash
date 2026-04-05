@@ -19,6 +19,9 @@ export const useGameStore = defineStore('game', () => {
   // Turn submission state
   const turnSubmitted = ref(false)
 
+  // Per-player status map: { [playerId]: 'selecting' | 'submitted' | 'acting' }
+  const playerStatuses = ref({})
+
   // Actions
   const setGameState = (state) => {
     gameId.value = state.gameId
@@ -60,6 +63,22 @@ export const useGameStore = defineStore('game', () => {
     turnSubmitted.value = val
   }
 
+  const setPlayerStatuses = (statusArray) => {
+    const map = {}
+    for (const entry of statusArray) {
+      map[entry.playerId] = entry.status
+    }
+    playerStatuses.value = map
+  }
+
+  const resetPlayerStatuses = () => {
+    const map = {}
+    for (const id of Object.keys(playerStatuses.value)) {
+      map[id] = 'selecting'
+    }
+    playerStatuses.value = map
+  }
+
   const isCardSelected = (cardId) => {
     return selectedCards.value.some(c => c.id === cardId)
   }
@@ -80,9 +99,12 @@ export const useGameStore = defineStore('game', () => {
     availableCards,
     selectedCards,
     turnSubmitted,
+    playerStatuses,
     setGameState,
     setAvailableCards,
     setTurnSubmitted,
+    setPlayerStatuses,
+    resetPlayerStatuses,
     selectCard,
     clearSelectedCards,
     isCardSelected,
