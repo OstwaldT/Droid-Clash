@@ -111,18 +111,10 @@ func execute_round() -> Array:
 
 ## Check if round is ready to execute
 func is_ready_to_execute() -> bool:
-	return game_manager.are_all_turns_submitted() or _check_timeout()
-
-## Check for timeout (placeholder)
-func _check_timeout() -> bool:
-	return false
+	return game_manager.are_all_turns_submitted()
 
 ## Reset priority order and submissions for a rematch.
 ## GameManager calls this before re-registering all players.
 func reset_priority() -> void:
 	_priority_order.clear()
 	card_submissions.clear()
-
-## Get events that occurred during a turn
-func get_turn_events() -> Array:
-	return []

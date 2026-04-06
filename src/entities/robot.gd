@@ -8,7 +8,6 @@ var position: Vector2i
 var direction: int = 0  # 0-5 (hex directions)
 var health: int = 100
 var max_health: int = 100
-var status: String = "alive"  # alive, dead
 var color: String = "#ffffff"
 
 func _init(pid: int, pname: String, start_pos: Vector2i, pcolor: String = "#ffffff") -> void:
@@ -98,7 +97,6 @@ func take_damage(amount: int) -> void:
 	health -= amount
 	if health <= 0:
 		health = 0
-		status = "dead"
 
 ## Heal
 func heal(amount: int) -> void:
@@ -106,7 +104,7 @@ func heal(amount: int) -> void:
 
 ## Check if alive
 func is_alive() -> bool:
-	return status == "alive" and health > 0
+	return health > 0
 
 ## Serialize to dictionary for transmission
 func to_dict() -> Dictionary:
@@ -117,6 +115,6 @@ func to_dict() -> Dictionary:
 		"direction": direction,
 		"health": health,
 		"maxHealth": max_health,
-		"status": status,
+		"status": "alive" if health > 0 else "dead",
 		"color": color
 	}

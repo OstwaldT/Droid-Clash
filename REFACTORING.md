@@ -63,8 +63,8 @@ runs the animation sequence. `GameBoard3D` just calls `orchestrator.play(events)
 
 ---
 
-## Priority 6 — Remove dead code
-**Status:** Pending
+## Priority 6 — Remove dead code ✅
+**Status:** Done
 
 **Candidates:**
 - `TurnManager.get_turn_events()` — always returns `[]`
