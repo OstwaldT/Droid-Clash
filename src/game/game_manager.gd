@@ -193,7 +193,8 @@ func reset_for_rematch() -> void:
 		var start_pos := grid.get_random_valid_hex()
 		var pdata: Dictionary = players[player_id]
 		robots[player_id] = Robot.new(player_id, pdata["name"], start_pos, pdata["color"])
-		player_decks[player_id] = Deck.new()
+		var arch: String = pdata.get("archetype", "standard")
+		player_decks[player_id] = Deck.new(DeckConfig.preset(arch))
 		players[player_id]["submitted"] = false
 		players[player_id]["submitted_instance_ids"] = []
 		if turn_manager:

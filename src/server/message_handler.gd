@@ -135,9 +135,12 @@ func _on_ready_message(client_id: PackedByteArray, message: Dictionary) -> void:
 	if player_id == -1:
 		return
 
-	# Mark player as ready
+	# Mark player as ready and apply chosen deck archetype
 	if player_id in game_manager.players:
 		game_manager.players[player_id]["ready"] = true
+		var archetype: String = message.get("data", {}).get("archetype", "standard")
+		game_manager.players[player_id]["archetype"] = archetype
+		game_manager.player_decks[player_id] = Deck.new(DeckConfig.preset(archetype))
 		game_manager.player_ready.emit(player_id)
 		_broadcast_player_list()
 

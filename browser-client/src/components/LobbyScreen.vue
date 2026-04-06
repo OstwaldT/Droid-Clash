@@ -75,6 +75,33 @@
           </div>
         </div>
 
+        <!-- Deck archetype selector -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h2 class="font-semibold text-gray-800 mb-3">Deck Archetype</h2>
+          <div class="flex items-center gap-3">
+            <button
+              @click="prevArchetype"
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-white border-2 border-gray-300 text-gray-600 hover:border-purple-500 hover:text-purple-600 transition text-lg font-bold flex-shrink-0"
+            >‹</button>
+            <div class="flex-1 text-center">
+              <div class="text-2xl mb-1">{{ currentArchetype.icon }}</div>
+              <div class="font-bold text-gray-800">{{ currentArchetype.label }}</div>
+              <div class="text-xs text-gray-500 mt-0.5">{{ currentArchetype.desc }}</div>
+            </div>
+            <button
+              @click="nextArchetype"
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-white border-2 border-gray-300 text-gray-600 hover:border-purple-500 hover:text-purple-600 transition text-lg font-bold flex-shrink-0"
+            >›</button>
+          </div>
+          <div class="flex justify-center gap-1.5 mt-3">
+            <span
+              v-for="(a, i) in ARCHETYPES" :key="a.key"
+              class="w-2 h-2 rounded-full transition-colors"
+              :class="i === archetypeIndex ? 'bg-purple-600' : 'bg-gray-300'"
+            />
+          </div>
+        </div>
+
         <button
           @click="readyUp"
           class="w-full py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition"
@@ -94,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { usePlayerStore } from '@/stores/playerStore'
 import { useGameStore } from '@/stores/gameStore'
 import websocket from '@/api/websocket'
@@ -131,7 +158,18 @@ function randomRobotName() {
   return `${first} ${last}`
 }
 
-const playerName = ref(randomRobotName())
+const ARCHETYPES = [
+  { key: 'standard',  label: 'Standard',  icon: '⚖️',  desc: 'Balanced movement & combat' },
+  { key: 'brawler',   label: 'Brawler',   icon: '👊',  desc: 'Heavy on close-range attacks' },
+  { key: 'speedster', label: 'Speedster', icon: '💨',  desc: 'Fast movement, light on attacks' },
+]
+
+const archetypeIndex = ref(0)
+const currentArchetype = computed(() => ARCHETYPES[archetypeIndex.value])
+const prevArchetype = () => { archetypeIndex.value = (archetypeIndex.value - 1 + ARCHETYPES.length) % ARCHETYPES.length }
+const nextArchetype = () => { archetypeIndex.value = (archetypeIndex.value + 1) % ARCHETYPES.length }
+
+
 const isConnecting = ref(false)
 const connectionError = ref('')
 
@@ -168,7 +206,7 @@ const leaveGame = () => {
 const readyUp = () => {
   websocket.send({
     type: 'ready',
-    data: { playerId: playerStore.playerId },
+    data: { playerId: playerStore.playerId, archetype: currentArchetype.value.key },
   })
 }
 </script>
