@@ -169,7 +169,7 @@ const currentArchetype = computed(() => ARCHETYPES[archetypeIndex.value])
 const prevArchetype = () => { archetypeIndex.value = (archetypeIndex.value - 1 + ARCHETYPES.length) % ARCHETYPES.length }
 const nextArchetype = () => { archetypeIndex.value = (archetypeIndex.value + 1) % ARCHETYPES.length }
 
-
+const playerName = ref(randomRobotName())
 const isConnecting = ref(false)
 const connectionError = ref('')
 
