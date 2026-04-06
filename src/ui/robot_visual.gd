@@ -55,7 +55,9 @@ func _build_model(pid: int, color: Color) -> void:
 	_model_root = packed.instantiate() as Node3D
 	# Kenney GLBs have the mesh child offset by [2, 0, 1.5] in local space;
 	# compensate so the model sits centered on the hex tile.
-	_model_root.position = Vector3(-MODEL_SCALE * 2.0, MODEL_Y, -MODEL_SCALE * 1.5)
+	# Child mesh sits at [2,0,1.5] in local space; after PI rotation that becomes
+	# [-2,0,-1.5] world-offset, so we compensate with the positive values.
+	_model_root.position = Vector3(MODEL_SCALE * 2.0, MODEL_Y, MODEL_SCALE * 1.5)
 	_model_root.rotation.y = PI  # model faces -Z; our code treats +Z as forward
 	_model_root.scale      = Vector3.ONE * MODEL_SCALE
 	add_child(_model_root)
