@@ -94,27 +94,12 @@ func _on_turn_submit_message(client_id: PackedByteArray, message: Dictionary) ->
 		card_ids.append(int(raw_id))
 	var turn_number: int = int(data.get("turnNumber", -1))
 	
-	# Validate turn number
-	if turn_number != game_manager.current_turn:
-		ws_server._send_error(client_id, "INVALID_TURN", "Wrong turn number")
-		return
-	
-	# Validate card count
-	if card_ids.size() != 3:
-		ws_server._send_error(client_id, "INVALID_CARDS", "Must select exactly 3 cards")
-		return
-
-	# Validate that all submitted instance IDs are in the player's current hand
+	# Validate turn number, card count, hand membership, and duplicates
 	var valid_hand_ids: Array = game_manager.player_decks[player_id].get_hand_instance_ids()
-	var seen := {}
-	for inst_id in card_ids:
-		if inst_id not in valid_hand_ids:
-			ws_server._send_error(client_id, "INVALID_CARD", "Card %d not in your hand" % inst_id)
-			return
-		if inst_id in seen:
-			ws_server._send_error(client_id, "DUPLICATE_CARDS", "Cannot play the same card twice")
-			return
-		seen[inst_id] = true
+	var result := CardValidator.validate(card_ids, turn_number, game_manager.current_turn, valid_hand_ids)
+	if not result["ok"]:
+		ws_server._send_error(client_id, result["code"], result["message"])
+		return
 	
 	# Accept turn
 	if game_manager.submit_turn(player_id, card_ids):

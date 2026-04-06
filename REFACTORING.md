@@ -18,8 +18,8 @@ All callers use `ColorPalette.PLAYER_COLORS`.
 
 ---
 
-## Priority 2 — CardValidator
-**Status:** Pending
+## Priority 2 — CardValidator ✅
+**Status:** Done
 
 **Problem:** Card submission validation ("must pick exactly 3 unique cards") lives
 in `MessageHandler`, which is a network layer. Game rules should live in the game layer.
