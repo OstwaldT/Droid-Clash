@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://cobnp6vtrgivp"
+path="res://.godot/imported/stairs_short.obj-a7bf669c5cee59ac22e82a8b9b0f6307.mesh"
+
+[deps]
+
+files=["res://.godot/imported/stairs_short.obj-a7bf669c5cee59ac22e82a8b9b0f6307.mesh"]
+
+source_file="res://assets/kenney_space-kit/Models/OBJ format/stairs_short.obj"
+dest_files=["res://.godot/imported/stairs_short.obj-a7bf669c5cee59ac22e82a8b9b0f6307.mesh", "res://.godot/imported/stairs_short.obj-a7bf669c5cee59ac22e82a8b9b0f6307.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

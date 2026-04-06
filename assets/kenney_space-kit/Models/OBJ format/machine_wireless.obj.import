@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://duxi1p3js86cw"
+path="res://.godot/imported/machine_wireless.obj-8e90a717cee957466d130d0ac573bf2e.mesh"
+
+[deps]
+
+files=["res://.godot/imported/machine_wireless.obj-8e90a717cee957466d130d0ac573bf2e.mesh"]
+
+source_file="res://assets/kenney_space-kit/Models/OBJ format/machine_wireless.obj"
+dest_files=["res://.godot/imported/machine_wireless.obj-8e90a717cee957466d130d0ac573bf2e.mesh", "res://.godot/imported/machine_wireless.obj-8e90a717cee957466d130d0ac573bf2e.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

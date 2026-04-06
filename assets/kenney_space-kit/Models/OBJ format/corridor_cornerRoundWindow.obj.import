@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b27632k1wb1v"
+path="res://.godot/imported/corridor_cornerRoundWindow.obj-01712103e240a12d14e89bab70ecd125.mesh"
+
+[deps]
+
+files=["res://.godot/imported/corridor_cornerRoundWindow.obj-01712103e240a12d14e89bab70ecd125.mesh"]
+
+source_file="res://assets/kenney_space-kit/Models/OBJ format/corridor_cornerRoundWindow.obj"
+dest_files=["res://.godot/imported/corridor_cornerRoundWindow.obj-01712103e240a12d14e89bab70ecd125.mesh", "res://.godot/imported/corridor_cornerRoundWindow.obj-01712103e240a12d14e89bab70ecd125.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

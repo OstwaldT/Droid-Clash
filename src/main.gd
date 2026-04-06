@@ -108,4 +108,3 @@ func _setup_3d_scene() -> void:
 
 func _process(_delta: float) -> void:
 	pass
-

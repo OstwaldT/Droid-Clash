@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://byv7jir8jx1pe"
+path="res://.godot/imported/terrain_sideCliff.obj-1364ed4c9f3e86ef12d587f2552f6cdd.mesh"
+
+[deps]
+
+files=["res://.godot/imported/terrain_sideCliff.obj-1364ed4c9f3e86ef12d587f2552f6cdd.mesh"]
+
+source_file="res://assets/kenney_space-kit/Models/OBJ format/terrain_sideCliff.obj"
+dest_files=["res://.godot/imported/terrain_sideCliff.obj-1364ed4c9f3e86ef12d587f2552f6cdd.mesh", "res://.godot/imported/terrain_sideCliff.obj-1364ed4c9f3e86ef12d587f2552f6cdd.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

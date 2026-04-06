@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://sq6akyjqlwrf"
+path="res://.godot/imported/rocket_sidesA.obj-ad62f5d5026c33e9ddea48f3f39d8897.mesh"
+
+[deps]
+
+files=["res://.godot/imported/rocket_sidesA.obj-ad62f5d5026c33e9ddea48f3f39d8897.mesh"]
+
+source_file="res://assets/kenney_space-kit/Models/OBJ format/rocket_sidesA.obj"
+dest_files=["res://.godot/imported/rocket_sidesA.obj-ad62f5d5026c33e9ddea48f3f39d8897.mesh", "res://.godot/imported/rocket_sidesA.obj-ad62f5d5026c33e9ddea48f3f39d8897.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

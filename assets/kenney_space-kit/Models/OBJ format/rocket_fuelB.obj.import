@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dunweatfefk0g"
+path="res://.godot/imported/rocket_fuelB.obj-a1e3b25b26adc03e88106378093aae61.mesh"
+
+[deps]
+
+files=["res://.godot/imported/rocket_fuelB.obj-a1e3b25b26adc03e88106378093aae61.mesh"]
+
+source_file="res://assets/kenney_space-kit/Models/OBJ format/rocket_fuelB.obj"
+dest_files=["res://.godot/imported/rocket_fuelB.obj-a1e3b25b26adc03e88106378093aae61.mesh", "res://.godot/imported/rocket_fuelB.obj-a1e3b25b26adc03e88106378093aae61.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

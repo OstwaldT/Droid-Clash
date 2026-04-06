@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://wsavsf8b3fuv"
+path="res://.godot/imported/bones.obj-bd164a53318550f9ac2283082dd86fab.mesh"
+
+[deps]
+
+files=["res://.godot/imported/bones.obj-bd164a53318550f9ac2283082dd86fab.mesh"]
+
+source_file="res://assets/kenney_space-kit/Models/OBJ format/bones.obj"
+dest_files=["res://.godot/imported/bones.obj-bd164a53318550f9ac2283082dd86fab.mesh", "res://.godot/imported/bones.obj-bd164a53318550f9ac2283082dd86fab.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

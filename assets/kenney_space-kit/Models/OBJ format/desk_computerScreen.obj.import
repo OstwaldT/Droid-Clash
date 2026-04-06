@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://ccctavd8b55w4"
+path="res://.godot/imported/desk_computerScreen.obj-d9ec4159cefff7752a557f8643781eaa.mesh"
+
+[deps]
+
+files=["res://.godot/imported/desk_computerScreen.obj-d9ec4159cefff7752a557f8643781eaa.mesh"]
+
+source_file="res://assets/kenney_space-kit/Models/OBJ format/desk_computerScreen.obj"
+dest_files=["res://.godot/imported/desk_computerScreen.obj-d9ec4159cefff7752a557f8643781eaa.mesh", "res://.godot/imported/desk_computerScreen.obj-d9ec4159cefff7752a557f8643781eaa.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

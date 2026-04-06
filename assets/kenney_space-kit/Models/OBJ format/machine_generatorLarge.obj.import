@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://coreptor3mcub"
+path="res://.godot/imported/machine_generatorLarge.obj-49484415e9b382ae4313f2e888593558.mesh"
+
+[deps]
+
+files=["res://.godot/imported/machine_generatorLarge.obj-49484415e9b382ae4313f2e888593558.mesh"]
+
+source_file="res://assets/kenney_space-kit/Models/OBJ format/machine_generatorLarge.obj"
+dest_files=["res://.godot/imported/machine_generatorLarge.obj-49484415e9b382ae4313f2e888593558.mesh", "res://.godot/imported/machine_generatorLarge.obj-49484415e9b382ae4313f2e888593558.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false
