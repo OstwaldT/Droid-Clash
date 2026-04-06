@@ -41,8 +41,8 @@ broadcast-ready dicts. MessageHandler becomes a thin router.
 
 ---
 
-## Priority 4 — HexGridRenderer
-**Status:** Pending
+## Priority 4 — HexGridRenderer ✅
+**Status:** Done
 
 **Problem:** `GameBoard3D` (~406 lines) handles tile spawning, material creation,
 animation orchestration, player lifecycle, and signal routing — 7 responsibilities.

@@ -6,209 +6,38 @@ class_name GameBoard3D
 ## MessageHandler listens to this to send round_ready to clients.
 signal round_display_complete
 
-## Hex tile geometry constants (flat-top orientation)
-const HEX_SIZE: float = 1.2      # circumradius
-const HEX_HEIGHT: float = 0.15   # tile thickness
-const TILE_GAP: float = 0.03     # visual gap between tiles
-
-## One color per player slot — source of truth is ColorPalette singleton.
-
 var game_manager: GameManager
 var game_over_panel: GameOverPanel = null  # set by main.gd after both are created
+var _renderer: HexGridRenderer
 var _robot_visuals: Dictionary = {}  # player_id -> RobotVisual
-var _hex_tiles: Dictionary = {}      # Vector2i -> Node3D (for rematch regeneration)
 
 # --- Setup ---
 
 ## Call once from main.gd after game_manager and turn_manager are ready.
 func setup(gm: GameManager, tm: TurnManager) -> void:
 	game_manager = gm
+	_renderer = HexGridRenderer.new()
+	add_child(_renderer)
+	_renderer.generate(gm.grid)
 	gm.player_joined.connect(_on_player_joined)
 	gm.player_left.connect(_on_player_left)
 	gm.game_started.connect(_on_game_restarted)
 	tm.turn_executed.connect(_on_turn_executed)
-	_generate_hex_grid()
-
-# --- Hex grid generation ---
-
-func _generate_hex_grid() -> void:
-	var grid: HexGrid = game_manager.grid
-	for hex in grid.get_all_hexes():
-		if grid.is_hole(hex):
-			_spawn_pit_marker(hex.x, hex.y)
-		elif grid.is_obstacle(hex):
-			_spawn_wall_tile(hex.x, hex.y)
-		else:
-			_spawn_floor_tile(hex.x, hex.y)
-
-## Palette of subtle tints cycled across floor tiles for visual variety.
-const FLOOR_TINTS: Array[Color] = [
-	Color(0.18, 0.20, 0.24),  # cool dark steel
-	Color(0.16, 0.22, 0.20),  # teal-grey
-	Color(0.22, 0.20, 0.18),  # warm gunmetal
-	Color(0.16, 0.18, 0.24),  # indigo-grey
-	Color(0.20, 0.22, 0.18),  # olive-grey
-]
-const FLOOR_SCALE: float = 0.52  # kept for wall base usage
-
-## Regular walkable floor tile — procedural hex with scifi material + emissive edge.
-func _spawn_floor_tile(q: int, r: int) -> void:
-	var root := Node3D.new()
-	root.rotation_degrees.y = 30.0
-	root.position = hex_to_world(q, r)
-	add_child(root)
-	_hex_tiles[Vector2i(q, r)] = root
-
-	var tint: Color = FLOOR_TINTS[posmod(q * 3 + r * 7, FLOOR_TINTS.size())]
-
-	# Main hex slab
-	var tile := MeshInstance3D.new()
-	var mesh := CylinderMesh.new()
-	mesh.top_radius    = HEX_SIZE - TILE_GAP
-	mesh.bottom_radius = HEX_SIZE - TILE_GAP
-	mesh.height        = HEX_HEIGHT
-	mesh.radial_segments = 6
-	tile.mesh = mesh
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = tint
-	mat.roughness    = 0.55
-	mat.metallic     = 0.60
-	tile.material_override = mat
-	root.add_child(tile)
-
-	# Thin emissive edge ring — gives the scifi glow without needing a texture
-	var ring := MeshInstance3D.new()
-	var rmesh := CylinderMesh.new()
-	rmesh.top_radius    = HEX_SIZE - TILE_GAP
-	rmesh.bottom_radius = HEX_SIZE - TILE_GAP
-	rmesh.height        = 0.012
-	rmesh.radial_segments = 6
-	ring.mesh = rmesh
-	ring.position.y = HEX_HEIGHT * 0.5 + 0.006
-	var rmat := StandardMaterial3D.new()
-	rmat.albedo_color               = Color(0.4, 0.6, 1.0)
-	rmat.emission_enabled           = true
-	rmat.emission                   = Color(0.2, 0.45, 1.0)
-	rmat.emission_energy_multiplier = 0.9
-	ring.material_override = rmat
-	root.add_child(ring)
-
-const WALL_MODEL  := "res://assets/scifi/glTF/Columns/Column_Hollow.gltf"
-## Column_Hollow is exactly 1.2 wide — same as HEX_SIZE, no scaling needed.
-
-## Tall wall/obstacle tile — Column_Hollow SciFi pillar.
-func _spawn_wall_tile(q: int, r: int) -> void:
-	var packed := load(WALL_MODEL) as PackedScene
-	var root := Node3D.new()
-	root.position = hex_to_world(q, r)
-	add_child(root)
-	_hex_tiles[Vector2i(q, r)] = root
-
-	# Base tile — same style as floor tiles (tinted metallic hex + emissive ring)
-	var tint: Color = FLOOR_TINTS[posmod(q * 3 + r * 7, FLOOR_TINTS.size())]
-	var base_tile := MeshInstance3D.new()
-	var base_mesh := CylinderMesh.new()
-	base_mesh.top_radius    = HEX_SIZE - TILE_GAP
-	base_mesh.bottom_radius = HEX_SIZE - TILE_GAP
-	base_mesh.height        = HEX_HEIGHT
-	base_mesh.radial_segments = 6
-	base_tile.mesh = base_mesh
-	base_tile.rotation_degrees.y = 30.0
-	var bmat := StandardMaterial3D.new()
-	bmat.albedo_color = tint
-	bmat.roughness    = 0.55
-	bmat.metallic     = 0.60
-	base_tile.material_override = bmat
-	root.add_child(base_tile)
-
-	var ring := MeshInstance3D.new()
-	var rmesh := CylinderMesh.new()
-	rmesh.top_radius    = HEX_SIZE - TILE_GAP
-	rmesh.bottom_radius = HEX_SIZE - TILE_GAP
-	rmesh.height        = 0.012
-	rmesh.radial_segments = 6
-	ring.mesh = rmesh
-	ring.rotation_degrees.y = 30.0
-	ring.position.y = HEX_HEIGHT * 0.5 + 0.006
-	var rmat := StandardMaterial3D.new()
-	rmat.albedo_color               = Color(0.4, 0.6, 1.0)
-	rmat.emission_enabled           = true
-	rmat.emission                   = Color(0.2, 0.45, 1.0)
-	rmat.emission_energy_multiplier = 0.9
-	ring.material_override = rmat
-	root.add_child(ring)
-
-	if packed == null:
-		_spawn_wall_column_fallback(root)
-		return
-
-	var col := packed.instantiate() as Node3D
-	# Column_Hollow is 1.2×5×1.2. Scale Y to ~0.22 → ~1.1 unit height.
-	col.scale    = Vector3(1.0, 0.22, 1.0)
-	col.position.y = -HEX_HEIGHT * 0.5
-	root.add_child(col)
-
-func _spawn_wall_column_fallback(root: Node3D) -> void:
-	const WALL_H: float = 1.1
-	var wall_mesh := MeshInstance3D.new()
-	var wmesh := CylinderMesh.new()
-	wmesh.top_radius = HEX_SIZE * 0.82 - TILE_GAP
-	wmesh.bottom_radius = HEX_SIZE * 0.82 - TILE_GAP
-	wmesh.height = WALL_H
-	wmesh.radial_segments = 6
-	wall_mesh.mesh = wmesh
-	wall_mesh.rotation_degrees.y = 30.0
-	wall_mesh.position.y = HEX_HEIGHT * 0.5 + WALL_H * 0.5
-	var wmat := StandardMaterial3D.new()
-	wmat.albedo_color = Color(0.14, 0.13, 0.17)
-	wmat.roughness = 0.92
-	wmat.metallic = 0.12
-	wall_mesh.material_override = wmat
-	root.add_child(wall_mesh)
-
-## Pit — completely empty, no geometry.
-func _spawn_pit_marker(q: int, r: int) -> void:
-	var root := Node3D.new()
-	root.position = hex_to_world(q, r)
-	add_child(root)
-	_hex_tiles[Vector2i(q, r)] = root
-
-# --- Coordinate conversion (flat-top axial) ---
-
-## Convert axial (q, r) to a world Vector3 at tile surface height.
-func hex_to_world(q: int, r: int) -> Vector3:
-	var x: float = HEX_SIZE * (3.0 / 2.0 * q)
-	var z: float = HEX_SIZE * (sqrt(3.0) / 2.0 * q + sqrt(3.0) * r)
-	return Vector3(x, 0.0, z)
-
-## World position of robot standing on a tile (y = tile top surface).
-func hex_to_robot_pos(q: int, r: int) -> Vector3:
-	var pos := hex_to_world(q, r)
-	pos.y = HEX_HEIGHT
-	return pos
-
-## Centre of the hex board in world space.
-## For a symmetric hexagonal board the axial origin (0,0) is always the centre.
-func get_grid_center() -> Vector3:
-	return hex_to_world(0, 0)
 
 # --- Signal handlers ---
 
 func _on_player_joined(player_id: int, player_name: String) -> void:
 	if player_id in _robot_visuals:
 		return
-
 	var robot: Robot = game_manager.robots.get(player_id)
 	var color: Color = Color.html(robot.color) if robot else ColorPalette.color_for(player_id - 1)
 	var visual := RobotVisual.new()
 	add_child(visual)
 	visual.setup(player_id, player_name, color)
-
 	if robot:
-		visual.move_to(hex_to_robot_pos(robot.position.x, robot.position.y), false)
+		visual.move_to(_renderer.hex_to_robot_pos(robot.position.x, robot.position.y), false)
 		visual.set_robot_direction(robot.direction)
 		visual.update_health(robot.health, robot.max_health)
-
 	_robot_visuals[player_id] = visual
 
 func _on_player_left(player_id: int) -> void:
@@ -216,34 +45,28 @@ func _on_player_left(player_id: int) -> void:
 		_robot_visuals[player_id].queue_free()
 		_robot_visuals.erase(player_id)
 
-## Called when the game restarts (rematch). Reset all robot visuals to their
-## new positions without re-creating them, and hide the game-over overlay.
+## Called when the game restarts (rematch). Reset robot visuals and regenerate tiles.
 func _on_game_restarted() -> void:
 	if game_over_panel:
 		game_over_panel.visible = false
-	# Tear down and regenerate tiles (map layout changes each rematch)
-	for tile in _hex_tiles.values():
-		tile.queue_free()
-	_hex_tiles.clear()
-	_generate_hex_grid()
-	# Reposition robots
+	_renderer.clear()
+	_renderer.generate(game_manager.grid)
 	for player_id in game_manager.robots.keys():
 		var robot: Robot = game_manager.robots[player_id]
 		var visual: RobotVisual = _robot_visuals.get(player_id)
 		if not visual:
 			continue
 		visual.revive()
-		visual.move_to(hex_to_robot_pos(robot.position.x, robot.position.y), false)
+		visual.move_to(_renderer.hex_to_robot_pos(robot.position.x, robot.position.y), false)
 		visual.set_robot_direction(robot.direction)
 		visual.update_health(robot.health, robot.max_health)
 
 func _on_turn_executed(events: Array) -> void:
-	# Step durations (seconds to wait after each event type)
-	const MOVE_STEP    := 0.85   # move tween (0.75s) + gap
-	const TURN_STEP    := 0.45   # rotation tween (0.28s) + gap
-	const ATTACK_STEP  := 0.90   # lunge (0.14s) + retract (0.26s) + explosion gap
-	const BLOCKED_STEP := 0.35   # bump anim + gap
-	const FALL_STEP    := 1.10   # slide (0.30s) + plummet (0.70s) + gap
+	const MOVE_STEP    := 0.85
+	const TURN_STEP    := 0.45
+	const ATTACK_STEP  := 0.90
+	const BLOCKED_STEP := 0.35
+	const FALL_STEP    := 1.10
 
 	for event in events:
 		var pid: int = event.get("playerId", -1)
@@ -256,34 +79,31 @@ func _on_turn_executed(events: Array) -> void:
 			Card.TYPE_MOVE:
 				if event.get("fell", false):
 					var fell_to: Vector2i = event.get("fell_to", Vector2i.ZERO)
-					var edge_world := hex_to_world(fell_to.x, fell_to.y)
-					edge_world.y = HEX_HEIGHT
+					var edge_world := _renderer.hex_to_world(fell_to.x, fell_to.y)
+					edge_world.y = HexGridRenderer.HEX_HEIGHT
 					visual.fall_off(edge_world)
 					await get_tree().create_timer(FALL_STEP).timeout
 				elif event.get("pushed_off", false):
-					# Pusher slides in; pushed robot falls off the edge simultaneously
 					var to: Vector2i         = event.get("to",          Vector2i.ZERO)
 					var pushed_to: Vector2i  = event.get("pushed_to",   Vector2i.ZERO)
 					var pushed_id: int       = event.get("pushed_id",   -1)
 					var pushed_visual: RobotVisual = _robot_visuals.get(pushed_id)
-					visual.move_to(hex_to_robot_pos(to.x, to.y))
+					visual.move_to(_renderer.hex_to_robot_pos(to.x, to.y))
 					if pushed_visual:
-						var edge_world := hex_to_world(pushed_to.x, pushed_to.y)
-						edge_world.y = HEX_HEIGHT
+						var edge_world := _renderer.hex_to_world(pushed_to.x, pushed_to.y)
+						edge_world.y = HexGridRenderer.HEX_HEIGHT
 						pushed_visual.fall_off(edge_world)
 					await get_tree().create_timer(FALL_STEP).timeout
 				elif event.get("pushed", false):
-					# Move both robots simultaneously
 					var to: Vector2i        = event.get("to",        Vector2i.ZERO)
 					var pushed_to: Vector2i = event.get("pushed_to", Vector2i.ZERO)
 					var pushed_id: int      = event.get("pushed_id", -1)
 					var pushed_visual: RobotVisual = _robot_visuals.get(pushed_id)
-					visual.move_to(hex_to_robot_pos(to.x, to.y))
+					visual.move_to(_renderer.hex_to_robot_pos(to.x, to.y))
 					if pushed_visual:
-						pushed_visual.move_to(hex_to_robot_pos(pushed_to.x, pushed_to.y))
+						pushed_visual.move_to(_renderer.hex_to_robot_pos(pushed_to.x, pushed_to.y))
 					await get_tree().create_timer(MOVE_STEP).timeout
 				elif event.get("slammed", false):
-					# Bump pusher, flash hit on slammed robot
 					visual.bump_blocked()
 					var slammed_id: int = event.get("slammed_id", -1)
 					var slammed_visual: RobotVisual = _robot_visuals.get(slammed_id)
@@ -292,7 +112,7 @@ func _on_turn_executed(events: Array) -> void:
 					await get_tree().create_timer(BLOCKED_STEP).timeout
 				elif event.get("success", false):
 					var to: Vector2i = event.get("to", Vector2i.ZERO)
-					visual.move_to(hex_to_robot_pos(to.x, to.y))
+					visual.move_to(_renderer.hex_to_robot_pos(to.x, to.y))
 					await get_tree().create_timer(MOVE_STEP).timeout
 				else:
 					visual.bump_blocked()
@@ -302,32 +122,28 @@ func _on_turn_executed(events: Array) -> void:
 				var steps: Array = event.get("steps", [])
 				var s0: Dictionary = steps[0] if steps.size() > 0 else {}
 				var s1: Dictionary = steps[1] if steps.size() > 1 else {}
-
 				if s0.get("success", false) and s1.get("success", false):
-					# Both hexes clear — one smooth glide over 2 hexes
 					var final_to: Vector2i = s1.get("to", Vector2i.ZERO)
-					visual.move_to(hex_to_robot_pos(final_to.x, final_to.y), true, 1.10)
+					visual.move_to(_renderer.hex_to_robot_pos(final_to.x, final_to.y), true, 1.10)
 					await get_tree().create_timer(1.20).timeout
 				elif s0.get("success", false) and s1.get("fell", false):
-					# First hex clear, second is a hole — glide smoothly to the edge then fall
 					var fell_to: Vector2i = s1.get("fell_to", Vector2i.ZERO)
-					var edge_world := hex_to_world(fell_to.x, fell_to.y)
-					edge_world.y = HEX_HEIGHT
+					var edge_world := _renderer.hex_to_world(fell_to.x, fell_to.y)
+					edge_world.y = HexGridRenderer.HEX_HEIGHT
 					visual.move_to(edge_world, true, 1.10)
 					await get_tree().create_timer(1.10).timeout
 					visual.fall_off(edge_world)
 					await get_tree().create_timer(FALL_STEP).timeout
 				else:
-					# Partial or no movement — animate step by step
 					if s0.get("fell", false):
 						var fell_to: Vector2i = s0.get("fell_to", Vector2i.ZERO)
-						var edge_world := hex_to_world(fell_to.x, fell_to.y)
-						edge_world.y = HEX_HEIGHT
+						var edge_world := _renderer.hex_to_world(fell_to.x, fell_to.y)
+						edge_world.y = HexGridRenderer.HEX_HEIGHT
 						visual.fall_off(edge_world)
 						await get_tree().create_timer(FALL_STEP).timeout
 					elif s0.get("success", false):
 						var to: Vector2i = s0.get("to", Vector2i.ZERO)
-						visual.move_to(hex_to_robot_pos(to.x, to.y))
+						visual.move_to(_renderer.hex_to_robot_pos(to.x, to.y))
 						await get_tree().create_timer(MOVE_STEP).timeout
 						visual.bump_blocked()
 						await get_tree().create_timer(BLOCKED_STEP).timeout
@@ -349,19 +165,18 @@ func _on_turn_executed(events: Array) -> void:
 					if target_visual:
 						var target_robot: Robot = game_manager.robots.get(target_id)
 						if target_robot and not target_robot.is_alive():
-							# Killing blow — explode instead of flash
 							target_visual.explode()
 						else:
 							target_visual.flash_hit()
 							if target_robot:
 								target_visual.update_health(target_robot.health, target_robot.max_health)
-				await get_tree().create_timer(ATTACK_STEP).timeout
+					await get_tree().create_timer(ATTACK_STEP).timeout
 
 			Card.TYPE_SHOOT:
 				var hit_pos: Vector2i = event.get("hit_pos", Vector2i.ZERO)
-				var target_world := hex_to_world(hit_pos.x, hit_pos.y)
+				var target_world := _renderer.hex_to_world(hit_pos.x, hit_pos.y)
 				visual.shoot_rocket(target_world)
-				await get_tree().create_timer(0.35).timeout  # rocket flight time
+				await get_tree().create_timer(0.35).timeout
 				if event.get("success", false):
 					var target_id: int = event.get("target", -1)
 					var target_visual: RobotVisual = _robot_visuals.get(target_id)
@@ -373,7 +188,7 @@ func _on_turn_executed(events: Array) -> void:
 							target_visual.flash_hit()
 							if target_robot:
 								target_visual.update_health(target_robot.health, target_robot.max_health)
-				await get_tree().create_timer(0.50).timeout  # impact + gap
+					await get_tree().create_timer(0.50).timeout
 
 	# Final sync: snap all visuals to authoritative post-round robot state
 	for player_id in game_manager.robots.keys():
@@ -386,10 +201,8 @@ func _on_turn_executed(events: Array) -> void:
 		if not robot.is_alive():
 			visual.mark_dead()
 
-	# Show game over overlay only after all animations have played out
 	if game_manager.phase == GameManager.GamePhase.GAME_OVER and game_over_panel:
-		await get_tree().create_timer(0.5).timeout  # brief pause before overlay
+		await get_tree().create_timer(0.5).timeout
 		game_over_panel.show_result()
 
-	# Notify message_handler that animations are done — it will send round_ready to clients
 	round_display_complete.emit()
