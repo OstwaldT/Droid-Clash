@@ -6,7 +6,7 @@ class_name LobbyPanel
 ## Hides automatically when game_started fires.
 
 const PANEL_W: float = 540.0
-const PANEL_H: float = 460.0
+const PANEL_H: float = 540.0
 
 ## Player colours come from the ColorPalette singleton.
 
@@ -89,6 +89,11 @@ func _build_ui() -> void:
 
 	vbox.add_child(_make_separator())
 
+	# Map size selector
+	vbox.add_child(_build_map_size_row())
+
+	vbox.add_child(_make_separator())
+
 	# Section label
 	var section := Label.new()
 	section.text = "CONNECTED PLAYERS"
@@ -122,6 +127,71 @@ func _build_ui() -> void:
 	_countdown_label.custom_minimum_size = Vector2(200, 160)
 	_countdown_label.visible = false
 	root.add_child(_countdown_label)
+
+## Map size options: [label, side_length, tile_count, player_hint]
+const MAP_SIZES := [
+	["SMALL",  3, 19, "2–3"],
+	["MEDIUM", 4, 37, "3–5"],
+	["LARGE",  5, 61, "5–8"],
+]
+var _map_size_buttons: Array = []
+
+func _build_map_size_row() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+
+	var lbl := Label.new()
+	lbl.text = "MAP SIZE"
+	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_color_override("font_color", Color(0.40, 0.40, 0.55))
+	lbl.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	lbl.custom_minimum_size.x = 82
+	lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(lbl)
+
+	_map_size_buttons.clear()
+	for entry in MAP_SIZES:
+		var btn := Button.new()
+		btn.text = "%s\n%d tiles · %sp" % [entry[0], entry[2], entry[3]]
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.set_meta("side_length", entry[1])
+		btn.pressed.connect(_on_map_size_pressed.bind(btn))
+		_map_size_buttons.append(btn)
+		row.add_child(btn)
+
+	_refresh_map_buttons()
+	return row
+
+func _on_map_size_pressed(btn: Button) -> void:
+	if not game_manager:
+		return
+	game_manager.set_map_size(btn.get_meta("side_length"))
+	_refresh_map_buttons()
+
+func _refresh_map_buttons() -> void:
+	var current: int = game_manager.map_size if game_manager else 5
+	for btn in _map_size_buttons:
+		var selected: bool = btn.get_meta("side_length") == current
+		var style := StyleBoxFlat.new()
+		style.set_corner_radius_all(6)
+		if selected:
+			style.bg_color     = Color(0.18, 0.42, 0.72, 0.95)
+			style.border_color = Color(0.40, 0.70, 1.0, 1.0)
+		else:
+			style.bg_color     = Color(0.12, 0.12, 0.20, 0.80)
+			style.border_color = Color(0.28, 0.28, 0.45, 0.7)
+		style.border_width_left   = 1
+		style.border_width_right  = 1
+		style.border_width_top    = 1
+		style.border_width_bottom = 1
+		style.content_margin_left   = 8
+		style.content_margin_right  = 8
+		style.content_margin_top    = 6
+		style.content_margin_bottom = 6
+		btn.add_theme_stylebox_override("normal", style)
+		btn.add_theme_color_override("font_color",
+			Color(1.0, 1.0, 1.0) if selected else Color(0.55, 0.55, 0.70))
 
 func _make_separator() -> HSeparator:
 	var sep := HSeparator.new()

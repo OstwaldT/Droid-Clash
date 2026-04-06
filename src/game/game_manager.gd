@@ -18,6 +18,7 @@ var phase: GamePhase = GamePhase.LOBBY
 var current_turn: int = 0
 var max_players: int = 8
 var turn_timeout: float = 30.0
+var map_size: int = 5  # HexGrid side length: 3=Small, 4=Medium, 5=Large
 
 var players: Dictionary = {}       # player_id -> {name, client_id, submitted, color, submitted_instance_ids}
 var robots: Dictionary = {}        # player_id -> Robot
@@ -72,14 +73,30 @@ func remove_player(player_id: int) -> void:
 		if get_alive_players().size() < 2 and phase == GamePhase.PLAYING:
 			end_game()
 
+## Change map size — only allowed while in the lobby.
+func set_map_size(side_length: int) -> void:
+	if phase != GamePhase.LOBBY:
+		return
+	map_size = side_length
+
 func start_game() -> void:
 	if phase != GamePhase.LOBBY or players.size() < 1:
 		return
-	
+
+	# Rebuild grid with the chosen map size and reassign all player positions
+	grid = HexGrid.new(map_size)
+	grid.generate_map()
+	var occupied: Array = []
+	for player_id in players.keys():
+		var pos := grid.get_spawn_hex(occupied)
+		occupied.append(pos)
+		robots[player_id].position  = pos
+		robots[player_id].direction = randi() % 6
+
 	phase = GamePhase.PLAYING
 	current_turn = 1
 	game_started.emit()
-	print("Game started with %d players" % players.size())
+	print("Game started — map size %d, %d players" % [map_size, players.size()])
 
 func end_game() -> void:
 	phase = GamePhase.GAME_OVER
@@ -175,11 +192,14 @@ func resolve_and_redraw_player_hand(player_id: int) -> Array:
 func reset_for_rematch() -> void:
 	phase = GamePhase.LOBBY
 	current_turn = 0
+	grid = HexGrid.new(map_size)
 	grid.generate_map()  # fresh map layout each rematch
 	if turn_manager:
 		turn_manager.reset_priority()
+	var occupied: Array = []
 	for player_id in players.keys():
-		var start_pos := grid.get_random_valid_hex()
+		var start_pos := grid.get_spawn_hex(occupied)
+		occupied.append(start_pos)
 		var pdata: Dictionary = players[player_id]
 		robots[player_id] = Robot.new(player_id, pdata["name"], start_pos, pdata["color"])
 		robots[player_id].direction = randi() % 6

@@ -82,6 +82,27 @@ func get_random_valid_hex() -> Vector2i:
 	var walkable: Array = get_all_hexes().filter(func(h: Vector2i) -> bool: return is_walkable(h))
 	return walkable[randi() % walkable.size()]
 
+## Pick a random walkable hex that is not the same as or adjacent to any hex in
+## `occupied`.  Falls back gracefully when the board is too crowded.
+func get_spawn_hex(occupied: Array) -> Vector2i:
+	var walkable: Array = get_all_hexes().filter(
+		func(h: Vector2i) -> bool: return is_walkable(h)
+	)
+	# Prefer hexes that are distance > 1 from every occupied tile
+	var spaced: Array = walkable.filter(func(h: Vector2i) -> bool:
+		for occ in occupied:
+			if get_distance(h, occ) <= 1:
+				return false
+		return true
+	)
+	if not spaced.is_empty():
+		return spaced[randi() % spaced.size()]
+	# Fallback: any walkable hex not already taken
+	var free: Array = walkable.filter(func(h: Vector2i) -> bool: return h not in occupied)
+	if not free.is_empty():
+		return free[randi() % free.size()]
+	return walkable[randi() % walkable.size()]
+
 ## Add an obstacle/wall to the grid.
 func add_obstacle(hex: Vector2i) -> void:
 	if is_valid(hex) and hex not in obstacles:
