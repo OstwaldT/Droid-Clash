@@ -5,9 +5,9 @@ class_name Deck
 ## Per-player shuffled deck of cards.
 ## Each card in the deck is identified by a unique instance ID so that
 ## duplicate card types in the same hand can be told apart.
+## Pass a DeckConfig to use a custom composition; defaults to the standard preset.
 
-const HAND_SIZE := 9
-
+var _config:       DeckConfig
 var _draw_pile:    Array = []   # Array of type_id ints
 var _discard_pile: Array = []   # Array of type_id ints
 var _current_hand: Array = []   # Array of {instance_id: int, type_id: int}
@@ -15,14 +15,15 @@ var _next_id:      int   = 0    # monotonically increasing instance ID counter
 ## Set by draw_hand() — whether the discard was shuffled in mid-deal and at which card index.
 var _last_shuffle_info: Dictionary = {"shuffled": false, "cards_before_shuffle": 0}
 
-func _init() -> void:
+func _init(config: DeckConfig = null) -> void:
+	_config = config if config != null else DeckConfig.preset("standard")
 	_build_and_shuffle()
 
-## Build a fresh draw pile from CardRegistry.COMPOSITION and shuffle it.
+## Build a fresh draw pile from the config's composition and shuffle it.
 func _build_and_shuffle() -> void:
 	var cards: Array = []
-	for type_id in CardRegistry.COMPOSITION:
-		for _i in CardRegistry.COMPOSITION[type_id]:
+	for type_id in _config.composition:
+		for _i in _config.composition[type_id]:
 			cards.append(type_id)
 	cards.shuffle()
 	_draw_pile = cards
@@ -34,7 +35,7 @@ func _build_and_shuffle() -> void:
 func draw_hand() -> Array:
 	_current_hand = []
 	_last_shuffle_info = {"shuffled": false, "cards_before_shuffle": 0}
-	var needed := HAND_SIZE
+	var needed := _config.hand_size
 	var cards_drawn := 0
 	while needed > 0:
 		if _draw_pile.is_empty():

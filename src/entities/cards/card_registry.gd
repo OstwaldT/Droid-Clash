@@ -3,18 +3,8 @@ extends RefCounted
 class_name CardRegistry
 
 ## Central registry for all card types.
-## Use create() to get a card instance; COMPOSITION defines deck contents.
-
-## How many of each card type appear in one player's deck.
-const COMPOSITION: Dictionary = {
-	Card.TYPE_MOVE:       5,  # Move Forward  — common
-	Card.TYPE_TURN_LEFT:  3,  # Turn Left
-	Card.TYPE_TURN_RIGHT: 3,  # Turn Right
-	Card.TYPE_RUSH:       2,  # Rush          — uncommon
-	Card.TYPE_180:        2,  # 180           — uncommon
-	Card.TYPE_ATTACK:     3,  # Attack        — rare
-	Card.TYPE_SHOOT:      3,  # Shoot         — rare
-}
+## Use create() to get a fresh Card instance by type ID.
+## Deck composition is defined in DeckConfig.
 
 ## Return a fresh Card instance for [type_id], or null if unknown.
 static func create(type_id: int) -> Card:
