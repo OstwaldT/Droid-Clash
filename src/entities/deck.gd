@@ -15,7 +15,7 @@ var _next_id:      int   = 0    # monotonically increasing instance ID counter
 ## Set by draw_hand() — whether the discard was shuffled in mid-deal and at which card index.
 var _last_shuffle_info: Dictionary = {"shuffled": false, "cards_before_shuffle": 0}
 
-func _init(config: DeckConfig = null) -> void:
+func _init(config = null) -> void:
 	_config = config if config != null else DeckConfig.preset("standard")
 	_build_and_shuffle()
 
