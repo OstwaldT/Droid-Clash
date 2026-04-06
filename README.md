@@ -57,12 +57,17 @@ npm run dev
 Droid-Clash/
 ├── src/
 │   ├── main.gd                       # Server entry point & scene wiring
+│   ├── config/
+│   │   └── color_palette.gd          # Autoload: player colour palette (single source)
 │   ├── server/
 │   │   ├── websocket_server.gd       # WebSocket listener (port 8080)
 │   │   └── message_handler.gd        # Message routing & validation
+│   ├── network/
+│   │   └── event_serializer.gd       # Wire-format helpers (hex → {q,r}, event arrays)
 │   ├── game/
 │   │   ├── game_manager.gd           # State machine, player management
-│   │   └── turn_manager.gd           # Round execution pipeline
+│   │   ├── turn_manager.gd           # Round execution pipeline
+│   │   └── card_validator.gd         # Card submission rule validation
 │   ├── entities/
 │   │   ├── hexgrid.gd                # Axial hex grid, pathfinding
 │   │   ├── robot.gd                  # Robot state & movement
@@ -73,9 +78,12 @@ Droid-Clash/
 │   │       ├── card_turn_left.gd     # Turn Left
 │   │       ├── card_turn_right.gd    # Turn Right
 │   │       ├── card_attack.gd        # Attack
-│   │       └── card_registry.gd      # Factory + deck composition
+│   │       ├── card_registry.gd      # Card factory
+│   │       └── deck_config.gd        # Deck archetypes (standard / brawler / speedster)
 │   └── ui/
-│       ├── game_board_3d.gd          # 3D hex board & robot visuals
+│       ├── game_board_3d.gd          # Player lifecycle & signal routing
+│       ├── hex_grid_renderer.gd      # 3D hex tile spawning & coordinate conversion
+│       ├── round_animation_orchestrator.gd  # Sequential card-event animations
 │       ├── robot_visual.gd           # Per-robot 3D node + animations
 │       ├── lobby_panel.gd            # Lobby overlay (2D CanvasLayer)
 │       ├── player_status_hud.gd      # In-game HUD (Selecting/Submitted/Acting)
@@ -90,7 +98,7 @@ Droid-Clash/
 │   │   │   ├── gameStore.js          # Phase, robots, cards, player statuses
 │   │   │   └── playerStore.js        # Identity, color, connection state
 │   │   └── components/
-│   │       ├── LobbyScreen.vue       # Name entry, player list, ready button
+│   │       ├── LobbyScreen.vue       # Name entry, archetype picker, ready button
 │   │       ├── CardSelection.vue     # 6-card hand, select 3, submit
 │   │       ├── HexBoard.vue          # SVG hex grid (client-side view)
 │   │       └── GameOverScreen.vue    # Winner display
@@ -122,7 +130,7 @@ Droid-Clash/
 ### Adding a New Card Type
 1. Create `src/entities/cards/card_yourcard.gd` extending `Card`
 2. Add it to `CardRegistry.create()` match statement
-3. Add its composition count to `CardRegistry.COMPOSITION`
+3. Add its count to the relevant archetype(s) in `DeckConfig.preset()` (`src/entities/cards/deck_config.gd`)
 4. No other files need changing
 
 ---

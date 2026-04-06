@@ -88,7 +88,7 @@ game_manager (when all alive players submitted)
 ### `game_manager.gd`
 - State machine: `LOBBY → PLAYING → GAME_OVER`
 - Holds `players`, `robots`, `player_decks` dicts
-- Assigns a distinct hex color from an 8-color palette on join
+- Assigns a distinct colour via `ColorPalette.hex_for()` on join
 - Signals: `player_joined`, `player_left`, `player_ready`, `player_submitted`, `round_starting`, `game_started`, `game_ended`
 
 ### `turn_manager.gd`
@@ -96,16 +96,32 @@ game_manager (when all alive players submitted)
 - `execute_round()`: resolves instance IDs → type IDs via deck, calls `CardRegistry.create(type_id).execute()`
 - `submitted_instance_ids` cleared **after** resolve (not before) to prevent INVALID_CARD race
 
+### `game_board_3d.gd`
+- Thin coordinator: manages player join/leave lifecycle, owns `HexGridRenderer` and `RoundAnimationOrchestrator`
+- On `turn_executed`: awaits orchestrator, then handles game-over overlay and emits `round_display_complete`
+
+### `hex_grid_renderer.gd`
+- Spawns all hex tile geometry (floor, wall, pit) with procedural scifi materials
+- Owns coordinate conversion: `hex_to_world()`, `hex_to_robot_pos()`
+- `generate(grid)` / `clear()` called by `GameBoard3D` on setup and rematch
+
+### `round_animation_orchestrator.gd`
+- Receives shared references to renderer and robot-visual dict
+- `play(events)` is awaitable — sequences all per-event animations (move, rush, turn, attack, shoot)
+- `_sync_all_visuals()` snaps all robots to authoritative state after animations
+
 ### Card Entity System (`src/entities/cards/`)
 ```
-card_base.gd          Base class, TYPE_* constants (1–4), virtual execute()
+card_base.gd          Base class, TYPE_* constants (1–6), virtual execute()
   ├── card_move.gd          TYPE_MOVE=1    🔼 Move forward one hex
   ├── card_turn_left.gd     TYPE_TURN_LEFT=2   ↶ Rotate CCW
   ├── card_turn_right.gd    TYPE_TURN_RIGHT=3  ↷ Rotate CW
-  └── card_attack.gd        TYPE_ATTACK=4  💥 15 damage to robot ahead
+  ├── card_attack.gd        TYPE_ATTACK=4  💥 15 damage to robot ahead
+  ├── card_rush.gd          TYPE_RUSH=5    ⚡ Move forward two hexes
+  └── card_shoot.gd         TYPE_SHOOT=6   🚀 Ranged attack along facing axis
 
 card_registry.gd      static create(type_id) → Card
-                       COMPOSITION = {1:5, 2:3, 3:3, 4:2}  (13 cards total)
+deck_config.gd        preset(key) → DeckConfig  (standard / brawler / speedster)
 ```
 
 ### `deck.gd`
@@ -115,16 +131,16 @@ card_registry.gd      static create(type_id) → Card
 - `hand_to_array()`: serialises hand including `id` (instance), `typeId`, `name`, `icon`, `description`
 
 ### `message_handler.gd`
-- Validates `turn_submit` cards are in player's current hand (by instance ID)
+- Delegates card validation to `CardValidator.validate()` (game-rule logic lives in game layer)
 - Guards against duplicate submissions per turn
 - `_on_turn_executed`: sends `hand_update` to each player first, then `game_state_update` broadcast
 - `_broadcast_player_statuses()` called after each submission and on `round_starting`
 
-### `game_board_3d.gd` + `robot_visual.gd`
-- 61 flat-top hexagonal tiles generated as `CylinderMesh`
-- Sequential event animation via `await` timer: MOVE 0.85s, TURN 0.45s, ATTACK 0.55s
-- `RobotVisual`: colored cylinder, health bar (green→yellow→red), billboard name
-- `match Card.TYPE_*` to dispatch animation type
+### `game_board_3d.gd` + `hex_grid_renderer.gd` + `round_animation_orchestrator.gd`
+- 61 flat-top hexagonal tiles generated as `CylinderMesh` with scifi metallic materials
+- Sequential event animation via `await` timer: MOVE 0.85s, TURN 0.45s, ATTACK 0.90s
+- `RobotVisual`: speeder GLB model, billboard health bar, movement/attack tweens
+- `match Card.TYPE_*` dispatches animation type in `RoundAnimationOrchestrator._play_*()`
 
 ### `player_status_hud.gd`
 - `CanvasLayer` top-right of Godot window
