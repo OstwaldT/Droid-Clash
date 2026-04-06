@@ -114,7 +114,8 @@ func _spawn_wall_tile(q: int, r: int) -> void:
 	add_child(root)
 	_hex_tiles[Vector2i(q, r)] = root
 
-	# Dark hex base under the column
+	# Base tile — same style as floor tiles (tinted metallic hex + emissive ring)
+	var tint: Color = FLOOR_TINTS[posmod(q * 3 + r * 7, FLOOR_TINTS.size())]
 	var base_tile := MeshInstance3D.new()
 	var base_mesh := CylinderMesh.new()
 	base_mesh.top_radius    = HEX_SIZE - TILE_GAP
@@ -124,11 +125,28 @@ func _spawn_wall_tile(q: int, r: int) -> void:
 	base_tile.mesh = base_mesh
 	base_tile.rotation_degrees.y = 30.0
 	var bmat := StandardMaterial3D.new()
-	bmat.albedo_color = Color(0.08, 0.08, 0.10)
-	bmat.roughness    = 0.8
-	bmat.metallic     = 0.4
+	bmat.albedo_color = tint
+	bmat.roughness    = 0.55
+	bmat.metallic     = 0.60
 	base_tile.material_override = bmat
 	root.add_child(base_tile)
+
+	var ring := MeshInstance3D.new()
+	var rmesh := CylinderMesh.new()
+	rmesh.top_radius    = HEX_SIZE - TILE_GAP
+	rmesh.bottom_radius = HEX_SIZE - TILE_GAP
+	rmesh.height        = 0.012
+	rmesh.radial_segments = 6
+	ring.mesh = rmesh
+	ring.rotation_degrees.y = 30.0
+	ring.position.y = HEX_HEIGHT * 0.5 + 0.006
+	var rmat := StandardMaterial3D.new()
+	rmat.albedo_color               = Color(0.4, 0.6, 1.0)
+	rmat.emission_enabled           = true
+	rmat.emission                   = Color(0.2, 0.45, 1.0)
+	rmat.emission_energy_multiplier = 0.9
+	ring.material_override = rmat
+	root.add_child(ring)
 
 	if packed == null:
 		_spawn_wall_column_fallback(root)
