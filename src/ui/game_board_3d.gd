@@ -11,17 +11,7 @@ const HEX_SIZE: float = 1.2      # circumradius
 const HEX_HEIGHT: float = 0.15   # tile thickness
 const TILE_GAP: float = 0.03     # visual gap between tiles
 
-## One color per player slot (up to 8 players)
-const PLAYER_COLORS: Array = [
-	Color(0.90, 0.20, 0.20),  # Red
-	Color(0.20, 0.52, 0.92),  # Blue
-	Color(0.20, 0.80, 0.30),  # Green
-	Color(0.92, 0.72, 0.08),  # Yellow
-	Color(0.72, 0.18, 0.92),  # Purple
-	Color(0.95, 0.50, 0.08),  # Orange
-	Color(0.08, 0.82, 0.82),  # Cyan
-	Color(0.92, 0.38, 0.72),  # Pink
-]
+## One color per player slot — source of truth is ColorPalette singleton.
 
 var game_manager: GameManager
 var game_over_panel: GameOverPanel = null  # set by main.gd after both are created
@@ -209,7 +199,7 @@ func _on_player_joined(player_id: int, player_name: String) -> void:
 		return
 
 	var robot: Robot = game_manager.robots.get(player_id)
-	var color: Color = Color.html(robot.color) if robot else PLAYER_COLORS[(player_id - 1) % PLAYER_COLORS.size()]
+	var color: Color = Color.html(robot.color) if robot else ColorPalette.color_for(player_id - 1)
 	var visual := RobotVisual.new()
 	add_child(visual)
 	visual.setup(player_id, player_name, color)

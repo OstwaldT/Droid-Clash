@@ -8,16 +8,7 @@ class_name LobbyPanel
 const PANEL_W: float = 540.0
 const PANEL_H: float = 460.0
 
-const PLAYER_COLORS: Array = [
-	Color(0.90, 0.20, 0.20),
-	Color(0.20, 0.52, 0.92),
-	Color(0.20, 0.80, 0.30),
-	Color(0.92, 0.72, 0.08),
-	Color(0.72, 0.18, 0.92),
-	Color(0.95, 0.50, 0.08),
-	Color(0.08, 0.82, 0.82),
-	Color(0.92, 0.38, 0.72),
-]
+## Player colours come from the ColorPalette singleton.
 
 var game_manager: GameManager
 
@@ -166,7 +157,7 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	if robot_ref and not robot_ref.color.is_empty():
 		swatch_color = Color.html(robot_ref.color)
 	else:
-		swatch_color = PLAYER_COLORS[(player_id - 1) % PLAYER_COLORS.size()]
+		swatch_color = ColorPalette.color_for(player_id - 1)
 	var swatch := ColorRect.new()
 	swatch.color = swatch_color
 	swatch.custom_minimum_size = Vector2(14, 14)

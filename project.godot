@@ -8,6 +8,10 @@
 
 config_version=5
 
+[autoload]
+
+ColorPalette="*res://src/config/color_palette.gd"
+
 [application]
 
 config/name="Droid-Clash"

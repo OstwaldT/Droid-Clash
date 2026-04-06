@@ -13,18 +13,6 @@ signal round_starting
 
 enum GamePhase { LOBBY, PLAYING, GAME_OVER }
 
-## Palette shared with game_board_3d / lobby_panel — one color per player slot.
-## Hex strings match the Color(...) literals used by the 3D UI.
-const PLAYER_COLORS: Array = [
-	"#e63333",  # Red
-	"#3385eb",  # Blue
-	"#33cc4d",  # Green
-	"#ebb814",  # Yellow
-	"#b82eeb",  # Purple
-	"#f28014",  # Orange
-	"#14d1d1",  # Cyan
-	"#eb61b8",  # Pink
-]
 
 var phase: GamePhase = GamePhase.LOBBY
 var current_turn: int = 0
@@ -48,7 +36,7 @@ func add_player(player_id: int, player_name: String, client_id: PackedByteArray)
 		return false
 	
 	# Assign a distinct color by slot index (before the player is added)
-	var color: String = PLAYER_COLORS[players.size() % PLAYER_COLORS.size()]
+	var color: String = ColorPalette.hex_for(players.size())
 
 	players[player_id] = {
 		"name": player_name,
