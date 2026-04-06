@@ -33,6 +33,7 @@ func setup(pid: int, pname: String, color: Color) -> void:
 	_build_model(pid, color)
 	_build_health_bar()
 	_build_label(pname)
+	rotation.y = randf() * TAU  # random starting orientation
 
 # --- Build helpers ---
 
