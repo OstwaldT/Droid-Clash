@@ -31,6 +31,11 @@ func setup(gm: GameManager, tm: TurnManager) -> void:
 	gm.game_started.connect(_on_game_restarted)
 	tm.turn_executed.connect(_on_turn_executed)
 
+# --- Public helpers ---
+
+func get_grid_center() -> Vector3:
+	return _renderer.get_grid_center()
+
 # --- Signal handlers ---
 
 func _on_player_joined(player_id: int, player_name: String) -> void:

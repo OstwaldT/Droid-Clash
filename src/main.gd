@@ -72,7 +72,7 @@ func _setup_3d_scene() -> void:
 	add_child(camera)
 
 	# Position camera after board exists so we can use grid centre
-	var center := game_board.get_grid_center()
+	var center: Vector3 = game_board.get_grid_center()
 	camera.position = center + Vector3(0.0, 17.0, -11.0)
 	camera.look_at(center, Vector3.UP)
 	camera.fov = 55.0
