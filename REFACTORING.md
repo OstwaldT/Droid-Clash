@@ -52,8 +52,8 @@ animation orchestration, player lifecycle, and signal routing — 7 responsibili
 
 ---
 
-## Priority 5 — RoundAnimationOrchestrator
-**Status:** Pending
+## Priority 5 — RoundAnimationOrchestrator ✅
+**Status:** Done
 
 **Problem:** `_on_turn_executed()` in `GameBoard3D` is ~150 lines of sequential
 animation logic mixed with game-state interpretation.
