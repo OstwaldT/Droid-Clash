@@ -51,71 +51,57 @@ func _generate_hex_grid() -> void:
 		else:
 			_spawn_floor_tile(hex.x, hex.y)
 
-const FLOOR_MODEL_A := "res://assets/scifi/glTF/Platforms/Platform_Squares.gltf"
-const FLOOR_MODEL_B := "res://assets/scifi/glTF/Platforms/Platform_DarkPlates.gltf"
-## Scale so the 4-unit-wide platform fills the hex inscribed circle (HEX_SIZE * sqrt(3)/2 * 2).
-const FLOOR_SCALE:   float = 0.52
+## Palette of subtle tints cycled across floor tiles for visual variety.
+const FLOOR_TINTS: Array[Color] = [
+	Color(0.18, 0.20, 0.24),  # cool dark steel
+	Color(0.16, 0.22, 0.20),  # teal-grey
+	Color(0.22, 0.20, 0.18),  # warm gunmetal
+	Color(0.16, 0.18, 0.24),  # indigo-grey
+	Color(0.20, 0.22, 0.18),  # olive-grey
+]
+const FLOOR_SCALE: float = 0.52  # kept for wall base usage
 
-## Regular walkable floor tile — alternates between two SciFi platform styles.
+## Regular walkable floor tile — procedural hex with scifi material + emissive edge.
 func _spawn_floor_tile(q: int, r: int) -> void:
-	var model_path := FLOOR_MODEL_A if (q + r) % 2 == 0 else FLOOR_MODEL_B
-	var packed := load(model_path) as PackedScene
-	if packed == null:
-		_spawn_floor_tile_fallback(q, r)
-		return
-	var tile := packed.instantiate() as Node3D
-	tile.scale    = Vector3.ONE * FLOOR_SCALE
-	tile.position = hex_to_world(q, r)
-	tile.position.y = -HEX_HEIGHT * 0.5
-	_tint_tile(tile, q, r)
-	add_child(tile)
-	_hex_tiles[Vector2i(q, r)] = tile
+	var root := Node3D.new()
+	root.rotation_degrees.y = 30.0
+	root.position = hex_to_world(q, r)
+	add_child(root)
+	_hex_tiles[Vector2i(q, r)] = root
 
-func _spawn_floor_tile_fallback(q: int, r: int) -> void:
+	var tint: Color = FLOOR_TINTS[posmod(q * 3 + r * 7, FLOOR_TINTS.size())]
+
+	# Main hex slab
 	var tile := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
-	mesh.top_radius = HEX_SIZE - TILE_GAP
+	mesh.top_radius    = HEX_SIZE - TILE_GAP
 	mesh.bottom_radius = HEX_SIZE - TILE_GAP
-	mesh.height = HEX_HEIGHT
+	mesh.height        = HEX_HEIGHT
 	mesh.radial_segments = 6
 	tile.mesh = mesh
 	var mat := StandardMaterial3D.new()
-	var base: float = 0.22 if (q + r) % 2 == 0 else 0.30
-	mat.albedo_color = Color(base, base + 0.04, base + 0.02)
-	mat.roughness = 0.85
+	mat.albedo_color = tint
+	mat.roughness    = 0.55
+	mat.metallic     = 0.60
 	tile.material_override = mat
-	tile.rotation_degrees.y = 30.0
-	tile.position = hex_to_world(q, r)
-	add_child(tile)
-	_hex_tiles[Vector2i(q, r)] = tile
+	root.add_child(tile)
 
-## Palette of subtle tints cycled across floor tiles for visual variety.
-const FLOOR_TINTS: Array = [
-	Color(1.00, 1.00, 1.05),  # cool white
-	Color(0.95, 1.00, 1.08),  # pale blue
-	Color(1.05, 0.98, 0.92),  # warm amber
-	Color(0.96, 1.02, 0.97),  # faint green
-	Color(1.02, 0.96, 1.04),  # soft purple
-]
-
-func _tint_tile(node: Node, q: int, r: int) -> void:
-	var tint: Color = FLOOR_TINTS[posmod(q * 3 + r * 7, FLOOR_TINTS.size())]
-	for child in node.get_children():
-		if child is MeshInstance3D:
-			var mi := child as MeshInstance3D
-			if mi.mesh == null:
-				continue
-			for i in mi.mesh.get_surface_count():
-				var orig := mi.mesh.surface_get_material(i)
-				var mat := StandardMaterial3D.new()
-				if orig is StandardMaterial3D:
-					var src := orig as StandardMaterial3D
-					mat.albedo_color = src.albedo_color * tint
-					mat.roughness    = src.roughness
-					mat.metallic     = src.metallic
-				else:
-					mat.albedo_color = tint
-				mi.set_surface_override_material(i, mat)
+	# Thin emissive edge ring — gives the scifi glow without needing a texture
+	var ring := MeshInstance3D.new()
+	var rmesh := CylinderMesh.new()
+	rmesh.top_radius    = HEX_SIZE - TILE_GAP
+	rmesh.bottom_radius = HEX_SIZE - TILE_GAP
+	rmesh.height        = 0.012
+	rmesh.radial_segments = 6
+	ring.mesh = rmesh
+	ring.position.y = HEX_HEIGHT * 0.5 + 0.006
+	var rmat := StandardMaterial3D.new()
+	rmat.albedo_color               = Color(0.4, 0.6, 1.0)
+	rmat.emission_enabled           = true
+	rmat.emission                   = Color(0.2, 0.45, 1.0)
+	rmat.emission_energy_multiplier = 0.9
+	ring.material_override = rmat
+	root.add_child(ring)
 
 const WALL_MODEL  := "res://assets/scifi/glTF/Columns/Column_Hollow.gltf"
 ## Column_Hollow is exactly 1.2 wide — same as HEX_SIZE, no scaling needed.
@@ -128,13 +114,21 @@ func _spawn_wall_tile(q: int, r: int) -> void:
 	add_child(root)
 	_hex_tiles[Vector2i(q, r)] = root
 
-	# Floor base (Platform_DarkPlates) under the column
-	var base_packed := load(FLOOR_MODEL_B) as PackedScene
-	if base_packed:
-		var base := base_packed.instantiate() as Node3D
-		base.scale    = Vector3.ONE * FLOOR_SCALE
-		base.position.y = -HEX_HEIGHT * 0.5
-		root.add_child(base)
+	# Dark hex base under the column
+	var base_tile := MeshInstance3D.new()
+	var base_mesh := CylinderMesh.new()
+	base_mesh.top_radius    = HEX_SIZE - TILE_GAP
+	base_mesh.bottom_radius = HEX_SIZE - TILE_GAP
+	base_mesh.height        = HEX_HEIGHT
+	base_mesh.radial_segments = 6
+	base_tile.mesh = base_mesh
+	base_tile.rotation_degrees.y = 30.0
+	var bmat := StandardMaterial3D.new()
+	bmat.albedo_color = Color(0.08, 0.08, 0.10)
+	bmat.roughness    = 0.8
+	bmat.metallic     = 0.4
+	base_tile.material_override = bmat
+	root.add_child(base_tile)
 
 	if packed == null:
 		_spawn_wall_column_fallback(root)
@@ -164,36 +158,22 @@ func _spawn_wall_column_fallback(root: Node3D) -> void:
 	wall_mesh.material_override = wmat
 	root.add_child(wall_mesh)
 
-const PIT_MODEL := "res://assets/scifi/glTF/Platforms/Platform_X.gltf"
-
-## Dark pit marker — an X-platform sunken below the board surface.
+## Dark pit marker — sunken hex with red emissive glow.
 func _spawn_pit_marker(q: int, r: int) -> void:
-	var packed := load(PIT_MODEL) as PackedScene
-	if packed == null:
-		_spawn_pit_marker_fallback(q, r)
-		return
-	var pit := packed.instantiate() as Node3D
-	pit.scale    = Vector3.ONE * FLOOR_SCALE
-	pit.position = hex_to_world(q, r)
-	pit.position.y = -0.35  # sunken below tile surface
-	add_child(pit)
-	_hex_tiles[Vector2i(q, r)] = pit
-
-func _spawn_pit_marker_fallback(q: int, r: int) -> void:
 	var pit := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
-	mesh.top_radius = HEX_SIZE * 0.85
+	mesh.top_radius    = HEX_SIZE * 0.85
 	mesh.bottom_radius = HEX_SIZE * 0.75
-	mesh.height = 0.06
+	mesh.height        = 0.06
 	mesh.radial_segments = 6
 	pit.mesh = mesh
 	pit.rotation_degrees.y = 30.0
 	pit.position = hex_to_world(q, r)
 	pit.position.y = -0.22
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.04, 0.01, 0.01)
-	mat.emission_enabled = true
-	mat.emission = Color(0.35, 0.05, 0.0)
+	mat.albedo_color               = Color(0.04, 0.01, 0.01)
+	mat.emission_enabled           = true
+	mat.emission                   = Color(0.35, 0.05, 0.0)
 	mat.emission_energy_multiplier = 0.6
 	mat.roughness = 1.0
 	pit.material_override = mat
