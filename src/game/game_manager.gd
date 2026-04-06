@@ -49,6 +49,7 @@ func add_player(player_id: int, player_name: String, client_id: PackedByteArray)
 	# Spawn robot at a random valid position on the hex board
 	var start_pos := grid.get_random_valid_hex()
 	robots[player_id] = Robot.new(player_id, player_name, start_pos, color)
+	robots[player_id].direction = randi() % 6
 	player_decks[player_id] = Deck.new()
 	if turn_manager:
 		turn_manager.register_player(player_id)
@@ -181,6 +182,7 @@ func reset_for_rematch() -> void:
 		var start_pos := grid.get_random_valid_hex()
 		var pdata: Dictionary = players[player_id]
 		robots[player_id] = Robot.new(player_id, pdata["name"], start_pos, pdata["color"])
+		robots[player_id].direction = randi() % 6
 		var arch: String = pdata.get("archetype", "standard")
 		player_decks[player_id] = Deck.new(DeckConfig.preset(arch))
 		players[player_id]["submitted"] = false

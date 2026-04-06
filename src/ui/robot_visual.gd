@@ -33,7 +33,7 @@ func setup(pid: int, pname: String, color: Color) -> void:
 	_build_model(pid, color)
 	_build_health_bar()
 	_build_label(pname)
-	rotation.y = randf() * TAU  # random starting orientation
+	rotation.y = 0.0  # direction set by _on_player_joined via set_robot_direction()
 
 # --- Build helpers ---
 
