@@ -176,31 +176,12 @@ func _spawn_wall_column_fallback(root: Node3D) -> void:
 	wall_mesh.material_override = wmat
 	root.add_child(wall_mesh)
 
-## Pit — just an empty void. Thin dark ring at the edge marks the boundary.
+## Pit — completely empty, no geometry.
 func _spawn_pit_marker(q: int, r: int) -> void:
 	var root := Node3D.new()
-	root.rotation_degrees.y = 30.0
 	root.position = hex_to_world(q, r)
 	add_child(root)
 	_hex_tiles[Vector2i(q, r)] = root
-
-	# Thin edge ring — barely visible, marks the hole boundary
-	var ring := MeshInstance3D.new()
-	var rmesh := CylinderMesh.new()
-	rmesh.top_radius    = HEX_SIZE - TILE_GAP
-	rmesh.bottom_radius = HEX_SIZE - TILE_GAP * 3.0
-	rmesh.height        = 0.018
-	rmesh.radial_segments = 6
-	ring.mesh = rmesh
-	ring.position.y = -0.06
-	var rmat := StandardMaterial3D.new()
-	rmat.albedo_color               = Color(0.06, 0.04, 0.08)
-	rmat.emission_enabled           = true
-	rmat.emission                   = Color(0.08, 0.02, 0.12)
-	rmat.emission_energy_multiplier = 0.4
-	rmat.roughness = 1.0
-	ring.material_override = rmat
-	root.add_child(ring)
 
 # --- Coordinate conversion (flat-top axial) ---
 
