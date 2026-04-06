@@ -232,7 +232,7 @@ func _on_turn_executed(events: Array) -> void:
 				"turnNumber": game_state["turnNumber"],
 				"currentPhase": "game_over",
 				"robots": game_state["robots"],
-				"events": _serialize_events(events),
+				"events": EventSerializer.serialize_events(events),
 				"playerStatuses": _build_player_statuses("selecting")
 			}
 		})
@@ -271,25 +271,11 @@ func _on_turn_executed(events: Array) -> void:
 			"turnNumber": game_state["turnNumber"],
 			"currentPhase": "card_selection",
 			"robots": game_state["robots"],
-			"events": _serialize_events(events),
+			"events": EventSerializer.serialize_events(events),
 			"playerStatuses": _build_player_statuses("selecting"),
 			"turnOrder": game_manager.turn_manager.get_priority_order()
 		}
 	})
-
-## Serialize event array for JSON — converts Vector2i values to {q, r} dicts.
-func _serialize_events(events: Array) -> Array:
-	var out: Array = []
-	for event in events:
-		var e: Dictionary = {}
-		for key in event.keys():
-			var val = event[key]
-			if val is Vector2i:
-				e[key] = {"q": val.x, "r": val.y}
-			else:
-				e[key] = val
-		out.append(e)
-	return out
 
 ## Send a player their current 6-card hand as a private message.
 func _send_hand_update(player_id: int) -> void:

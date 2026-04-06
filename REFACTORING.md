@@ -30,8 +30,8 @@ the network response.
 
 ---
 
-## Priority 3 — EventSerializer
-**Status:** Pending
+## Priority 3 — EventSerializer ✅
+**Status:** Done
 
 **Problem:** Network serialization (dict → JSON payload) is scattered across
 `MessageHandler` and `Robot.to_dict()`. No single place owns the wire format.

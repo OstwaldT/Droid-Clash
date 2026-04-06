@@ -113,7 +113,7 @@ func to_dict() -> Dictionary:
 	return {
 		"playerId": player_id,
 		"bot_name": bot_name,
-		"position": {"q": position.x, "r": position.y},
+		"position": EventSerializer.hex_to_dict(position),
 		"direction": direction,
 		"health": health,
 		"maxHealth": max_health,
