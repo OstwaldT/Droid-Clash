@@ -67,6 +67,7 @@ func _spawn_floor_tile(q: int, r: int) -> void:
 	tile.scale    = Vector3.ONE * FLOOR_SCALE
 	tile.position = hex_to_world(q, r)
 	tile.position.y = -HEX_HEIGHT * 0.5
+	_tint_tile(tile, q, r)
 	add_child(tile)
 	_hex_tiles[Vector2i(q, r)] = tile
 
@@ -87,6 +88,34 @@ func _spawn_floor_tile_fallback(q: int, r: int) -> void:
 	tile.position = hex_to_world(q, r)
 	add_child(tile)
 	_hex_tiles[Vector2i(q, r)] = tile
+
+## Palette of subtle tints cycled across floor tiles for visual variety.
+const FLOOR_TINTS: Array = [
+	Color(1.00, 1.00, 1.05),  # cool white
+	Color(0.95, 1.00, 1.08),  # pale blue
+	Color(1.05, 0.98, 0.92),  # warm amber
+	Color(0.96, 1.02, 0.97),  # faint green
+	Color(1.02, 0.96, 1.04),  # soft purple
+]
+
+func _tint_tile(node: Node, q: int, r: int) -> void:
+	var tint: Color = FLOOR_TINTS[posmod(q * 3 + r * 7, FLOOR_TINTS.size())]
+	for child in node.get_children():
+		if child is MeshInstance3D:
+			var mi := child as MeshInstance3D
+			if mi.mesh == null:
+				continue
+			for i in mi.mesh.get_surface_count():
+				var orig := mi.mesh.surface_get_material(i)
+				var mat := StandardMaterial3D.new()
+				if orig is StandardMaterial3D:
+					var src := orig as StandardMaterial3D
+					mat.albedo_color = src.albedo_color * tint
+					mat.roughness    = src.roughness
+					mat.metallic     = src.metallic
+				else:
+					mat.albedo_color = tint
+				mi.set_surface_override_material(i, mat)
 
 const WALL_MODEL  := "res://assets/scifi/glTF/Columns/Column_Hollow.gltf"
 ## Column_Hollow is exactly 1.2 wide — same as HEX_SIZE, no scaling needed.
@@ -112,8 +141,8 @@ func _spawn_wall_tile(q: int, r: int) -> void:
 		return
 
 	var col := packed.instantiate() as Node3D
-	# Column_Hollow is 1.2×5×1.2 — sits with base at Y=0, top at Y=5.
-	# Shift it down so it appears to rise from the tile surface.
+	# Column_Hollow is 1.2×5×1.2. Scale Y to ~0.22 → ~1.1 unit height.
+	col.scale    = Vector3(1.0, 0.22, 1.0)
 	col.position.y = -HEX_HEIGHT * 0.5
 	root.add_child(col)
 
