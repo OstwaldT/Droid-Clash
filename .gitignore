@@ -1,2 +1,11 @@
 # Godot 4+ specific ignores
 .godot/
+
+# macOS
+.DS_Store
+
+# Editors
+*.swp
+*~
+*.bak
+*.orig
