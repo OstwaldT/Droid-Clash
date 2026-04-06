@@ -51,8 +51,26 @@ func _generate_hex_grid() -> void:
 		else:
 			_spawn_floor_tile(hex.x, hex.y)
 
-## Regular walkable floor tile.
+const FLOOR_MODEL_A := "res://assets/scifi/glTF/Platforms/Platform_Squares.gltf"
+const FLOOR_MODEL_B := "res://assets/scifi/glTF/Platforms/Platform_DarkPlates.gltf"
+## Scale so the 4-unit-wide platform fills the hex inscribed circle (HEX_SIZE * sqrt(3)/2 * 2).
+const FLOOR_SCALE:   float = 0.52
+
+## Regular walkable floor tile — alternates between two SciFi platform styles.
 func _spawn_floor_tile(q: int, r: int) -> void:
+	var model_path := FLOOR_MODEL_A if (q + r) % 2 == 0 else FLOOR_MODEL_B
+	var packed := load(model_path) as PackedScene
+	if packed == null:
+		_spawn_floor_tile_fallback(q, r)
+		return
+	var tile := packed.instantiate() as Node3D
+	tile.scale    = Vector3.ONE * FLOOR_SCALE
+	tile.position = hex_to_world(q, r)
+	tile.position.y = -HEX_HEIGHT * 0.5
+	add_child(tile)
+	_hex_tiles[Vector2i(q, r)] = tile
+
+func _spawn_floor_tile_fallback(q: int, r: int) -> void:
 	var tile := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = HEX_SIZE - TILE_GAP
@@ -60,42 +78,47 @@ func _spawn_floor_tile(q: int, r: int) -> void:
 	mesh.height = HEX_HEIGHT
 	mesh.radial_segments = 6
 	tile.mesh = mesh
-
 	var mat := StandardMaterial3D.new()
 	var base: float = 0.22 if (q + r) % 2 == 0 else 0.30
 	mat.albedo_color = Color(base, base + 0.04, base + 0.02)
 	mat.roughness = 0.85
 	tile.material_override = mat
-
 	tile.rotation_degrees.y = 30.0
 	tile.position = hex_to_world(q, r)
 	add_child(tile)
 	_hex_tiles[Vector2i(q, r)] = tile
 
-## Tall wall/obstacle tile — blocks movement.
+const WALL_MODEL  := "res://assets/scifi/glTF/Columns/Column_Hollow.gltf"
+## Column_Hollow is exactly 1.2 wide — same as HEX_SIZE, no scaling needed.
+
+## Tall wall/obstacle tile — Column_Hollow SciFi pillar.
 func _spawn_wall_tile(q: int, r: int) -> void:
-	const WALL_H: float = 1.1
+	var packed := load(WALL_MODEL) as PackedScene
 	var root := Node3D.new()
 	root.position = hex_to_world(q, r)
 	add_child(root)
 	_hex_tiles[Vector2i(q, r)] = root
 
-	# Base flush with floor
-	var base_mesh := MeshInstance3D.new()
-	var bmesh := CylinderMesh.new()
-	bmesh.top_radius = HEX_SIZE - TILE_GAP
-	bmesh.bottom_radius = HEX_SIZE - TILE_GAP
-	bmesh.height = HEX_HEIGHT
-	bmesh.radial_segments = 6
-	base_mesh.mesh = bmesh
-	var bmat := StandardMaterial3D.new()
-	bmat.albedo_color = Color(0.10, 0.10, 0.13)
-	bmat.roughness = 1.0
-	base_mesh.material_override = bmat
-	base_mesh.rotation_degrees.y = 30.0
-	root.add_child(base_mesh)
+	# Floor base (Platform_DarkPlates) under the column
+	var base_packed := load(FLOOR_MODEL_B) as PackedScene
+	if base_packed:
+		var base := base_packed.instantiate() as Node3D
+		base.scale    = Vector3.ONE * FLOOR_SCALE
+		base.position.y = -HEX_HEIGHT * 0.5
+		root.add_child(base)
 
-	# Tall wall block sitting on top of the base
+	if packed == null:
+		_spawn_wall_column_fallback(root)
+		return
+
+	var col := packed.instantiate() as Node3D
+	# Column_Hollow is 1.2×5×1.2 — sits with base at Y=0, top at Y=5.
+	# Shift it down so it appears to rise from the tile surface.
+	col.position.y = -HEX_HEIGHT * 0.5
+	root.add_child(col)
+
+func _spawn_wall_column_fallback(root: Node3D) -> void:
+	const WALL_H: float = 1.1
 	var wall_mesh := MeshInstance3D.new()
 	var wmesh := CylinderMesh.new()
 	wmesh.top_radius = HEX_SIZE * 0.82 - TILE_GAP
@@ -112,26 +135,22 @@ func _spawn_wall_tile(q: int, r: int) -> void:
 	wall_mesh.material_override = wmat
 	root.add_child(wall_mesh)
 
-	# Glowing top cap — marks it clearly as a wall
-	var cap_mesh := MeshInstance3D.new()
-	var cmesh := CylinderMesh.new()
-	cmesh.top_radius = HEX_SIZE * 0.82 - TILE_GAP
-	cmesh.bottom_radius = HEX_SIZE * 0.82 - TILE_GAP
-	cmesh.height = 0.04
-	cmesh.radial_segments = 6
-	cap_mesh.mesh = cmesh
-	cap_mesh.rotation_degrees.y = 30.0
-	cap_mesh.position.y = HEX_HEIGHT * 0.5 + WALL_H + 0.02
-	var cmat := StandardMaterial3D.new()
-	cmat.albedo_color = Color(0.30, 0.28, 0.40)
-	cmat.emission_enabled = true
-	cmat.emission = Color(0.18, 0.15, 0.35)
-	cmat.emission_energy_multiplier = 1.2
-	cap_mesh.material_override = cmat
-	root.add_child(cap_mesh)
+const PIT_MODEL := "res://assets/scifi/glTF/Platforms/Platform_X.gltf"
 
-## Dark pit marker shown where a hole tile would be.
+## Dark pit marker — an X-platform sunken below the board surface.
 func _spawn_pit_marker(q: int, r: int) -> void:
+	var packed := load(PIT_MODEL) as PackedScene
+	if packed == null:
+		_spawn_pit_marker_fallback(q, r)
+		return
+	var pit := packed.instantiate() as Node3D
+	pit.scale    = Vector3.ONE * FLOOR_SCALE
+	pit.position = hex_to_world(q, r)
+	pit.position.y = -0.35  # sunken below tile surface
+	add_child(pit)
+	_hex_tiles[Vector2i(q, r)] = pit
+
+func _spawn_pit_marker_fallback(q: int, r: int) -> void:
 	var pit := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = HEX_SIZE * 0.85
@@ -142,7 +161,6 @@ func _spawn_pit_marker(q: int, r: int) -> void:
 	pit.rotation_degrees.y = 30.0
 	pit.position = hex_to_world(q, r)
 	pit.position.y = -0.22
-
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.04, 0.01, 0.01)
 	mat.emission_enabled = true
