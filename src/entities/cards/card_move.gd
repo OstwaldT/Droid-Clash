@@ -56,13 +56,16 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 				"pushed_to":   result["pushed_to"],
 			}
 		"slammed":
+			var slammed: Robot = all_robots.get(result["slammed_id"])
 			return {
-				"type":        type_id,
-				"success":     false,
-				"message":     "Slammed robot into obstacle",
-				"slammed":     true,
-				"slammed_id":  result["slammed_id"],
-				"slam_damage": result["slam_damage"],
+				"type":               type_id,
+				"success":            false,
+				"message":            "Slammed robot into obstacle",
+				"slammed":            true,
+				"slammed_id":         result["slammed_id"],
+				"slam_damage":        result["slam_damage"],
+				"slammed_health":     slammed.health if slammed else 0,
+				"slammed_max_health": slammed.max_health if slammed else 100,
 			}
 		_:  # "blocked"
 			return {

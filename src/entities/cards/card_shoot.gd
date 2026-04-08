@@ -35,12 +35,14 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 			if r.position == next_pos and r.is_alive() and r != robot:
 				r.take_damage(SHOOT_DAMAGE)
 				return {
-					"type":    type_id,
-					"success": true,
-					"message": "Rocket hit %s for %d damage" % [r.bot_name, SHOOT_DAMAGE],
-					"damage":  SHOOT_DAMAGE,
-					"target":  r.player_id,
-					"hit_pos": next_pos,
+					"type":              type_id,
+					"success":           true,
+					"message":           "Rocket hit %s for %d damage" % [r.bot_name, SHOOT_DAMAGE],
+					"damage":            SHOOT_DAMAGE,
+					"target":            r.player_id,
+					"hit_pos":           next_pos,
+					"target_health":     r.health,
+					"target_max_health": r.max_health,
 				}
 
 		check_pos = next_pos  # advance — nothing hit this hex

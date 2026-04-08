@@ -90,6 +90,7 @@ func _play_move(visual: RobotVisual, event: Dictionary) -> void:
 		var slammed_visual: RobotVisual = _visuals.get(slammed_id)
 		if slammed_visual:
 			slammed_visual.flash_hit()
+			slammed_visual.update_health(event.get("slammed_health", 0), event.get("slammed_max_health", 100))
 		await get_tree().create_timer(BLOCKED_STEP).timeout
 	elif event.get("success", false):
 		var to: Vector2i = event.get("to", Vector2i.ZERO)
@@ -138,16 +139,16 @@ func _play_attack(visual: RobotVisual, event: Dictionary) -> void:
 		var target_id: int = event.get("target", -1)
 		var target_visual: RobotVisual = _visuals.get(target_id)
 		if target_visual:
-			var target_robot: Robot = _game_manager.robots.get(target_id)
-			if target_robot and not target_robot.is_alive():
-				# Snap to correct tile before exploding so drift doesn't make it
-				# look like the robot is sinking below the floor.
-				target_visual.move_to(_renderer.hex_to_robot_pos(target_robot.position.x, target_robot.position.y), false)
+			var target_health: int     = event.get("target_health", 1)
+			var target_max_hp: int     = event.get("target_max_health", 100)
+			if target_health <= 0:
+				var target_robot: Robot = _game_manager.robots.get(target_id)
+				if target_robot:
+					target_visual.move_to(_renderer.hex_to_robot_pos(target_robot.position.x, target_robot.position.y), false)
 				target_visual.explode()
 			else:
 				target_visual.flash_hit()
-				if target_robot:
-					target_visual.update_health(target_robot.health, target_robot.max_health)
+				target_visual.update_health(target_health, target_max_hp)
 	await get_tree().create_timer(ATTACK_STEP).timeout
 
 func _play_shoot(visual: RobotVisual, event: Dictionary) -> void:
@@ -159,14 +160,16 @@ func _play_shoot(visual: RobotVisual, event: Dictionary) -> void:
 		var target_id: int = event.get("target", -1)
 		var target_visual: RobotVisual = _visuals.get(target_id)
 		if target_visual:
-			var target_robot: Robot = _game_manager.robots.get(target_id)
-			if target_robot and not target_robot.is_alive():
-				target_visual.move_to(_renderer.hex_to_robot_pos(target_robot.position.x, target_robot.position.y), false)
+			var target_health: int = event.get("target_health", 1)
+			var target_max_hp: int = event.get("target_max_health", 100)
+			if target_health <= 0:
+				var target_robot: Robot = _game_manager.robots.get(target_id)
+				if target_robot:
+					target_visual.move_to(_renderer.hex_to_robot_pos(target_robot.position.x, target_robot.position.y), false)
 				target_visual.explode()
 			else:
 				target_visual.flash_hit()
-				if target_robot:
-					target_visual.update_health(target_robot.health, target_robot.max_health)
+				target_visual.update_health(target_health, target_max_hp)
 	await get_tree().create_timer(0.50).timeout
 
 ## Snap all visuals to the authoritative post-round robot state.

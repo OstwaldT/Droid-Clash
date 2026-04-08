@@ -29,9 +29,11 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 
 	target.take_damage(BASE_DAMAGE)
 	return {
-		"type":    type_id,
-		"success": true,
-		"message": "Hit %s for %d damage" % [target.bot_name, BASE_DAMAGE],
-		"damage":  BASE_DAMAGE,
-		"target":  target.player_id,
+		"type":              type_id,
+		"success":           true,
+		"message":           "Hit %s for %d damage" % [target.bot_name, BASE_DAMAGE],
+		"damage":            BASE_DAMAGE,
+		"target":            target.player_id,
+		"target_health":     target.health,
+		"target_max_health": target.max_health,
 	}
