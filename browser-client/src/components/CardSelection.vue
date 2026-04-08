@@ -130,171 +130,23 @@ import { useGameStore } from '@/stores/gameStore'
 import { usePlayerStore } from '@/stores/playerStore'
 import websocket from '@/api/websocket'
 import TurnOrderDisplay from '@/components/TurnOrderDisplay.vue'
+import { useCardAnimations } from '@/composables/useCardAnimations'
 
 const gameStore   = useGameStore()
 const playerStore = usePlayerStore()
 
-// DOM refs
-const slotRefs        = ref([])
-const cardRefs        = ref([])
-const drawPileRef     = ref(null)
-const discardPileRef  = ref(null)
+// DOM refs (passed into the composable)
+const slotRefs       = ref([])
+const cardRefs       = ref([])
+const drawPileRef    = ref(null)
+const discardPileRef = ref(null)
 
-// Single-card selection fly state
-const flyCard   = ref(null)
-const flyingIds = ref(new Set())
-
-// Batch fly ghosts (deal / discard animations)
-const flyCards   = ref([])
-const dealingSet = ref(new Set())   // card IDs hidden while their deal ghost is in flight
-
-// Tracks the first card ID of the last dealt hand to avoid re-animating the same hand
-const dealtPhaseKey = ref(null)
-// CSS class toggled on discard pile during shuffle animation
-const discardShuffling = ref(false)
-
-const isTaken  = (id) => flyingIds.value.has(id) || gameStore.isCardSelected(id)
-const isFlying = (id) => id && flyingIds.value.has(id)
-
-// ── Discard animation ─────────────────────────────────────────────────────────
-async function runDiscardAnimation(selectedCards, handCards) {
-  if (!discardPileRef.value) return
-
-  const discardRect = discardPileRef.value.getBoundingClientRect()
-  const discardCx = discardRect.left + discardRect.width  / 2
-  const discardCy = discardRect.top  + discardRect.height / 2
-
-  const ghosts = []
-
-  // Selected cards fly from their slots
-  for (let i = 0; i < selectedCards.length; i++) {
-    const slotEl = slotRefs.value[i]
-    if (!slotEl) continue
-    const rect = slotEl.getBoundingClientRect()
-    ghosts.push({
-      id:   `discard-slot-${Date.now()}-${i}`,
-      icon: selectedCards[i].icon,
-      w: rect.width, h: rect.height,
-      left: rect.left + rect.width  / 2 - rect.width  / 2,
-      top:  rect.top  + rect.height / 2 - rect.height / 2,
-      tx: 0, ty: 0,
-    })
-  }
-
-  // Unselected cards fly from their grid positions
-  const allCards = gameStore.availableCards
-  for (let i = 0; i < handCards.length; i++) {
-    const cardIdx = allCards.findIndex(c => c.id === handCards[i].id)
-    const cardEl  = cardRefs.value[cardIdx]
-    if (!cardEl) continue
-    const rect = cardEl.getBoundingClientRect()
-    ghosts.push({
-      id:   `discard-hand-${Date.now()}-${i}`,
-      icon: handCards[i].icon,
-      w: rect.width, h: rect.height,
-      left: rect.left,
-      top:  rect.top,
-      tx: 0, ty: 0,
-    })
-  }
-
-  if (!ghosts.length) return
-
-  flyCards.value = [...flyCards.value, ...ghosts]
-  await nextTick()
-
-  return new Promise(resolve => {
-    ghosts.forEach((ghost, i) => {
-      setTimeout(() => {
-        const g = flyCards.value.find(x => x.id === ghost.id)
-        if (g) {
-          g.tx = (discardCx - g.w / 2) - g.left
-          g.ty = (discardCy - g.h / 2) - g.top
-        }
-      }, i * 45)
-    })
-    setTimeout(() => {
-      flyCards.value = flyCards.value.filter(g => !ghosts.some(x => x.id === g.id))
-      resolve()
-    }, ghosts.length * 45 + 360)
-  })
-}
-
-// ── Deal animation ─────────────────────────────────────────────────────────────
-
-// Fly a batch of cards from the draw pile to their grid positions.
-async function dealBatch(cards, startIndex) {
-  if (!drawPileRef.value || !cards.length) return
-  const drawRect = drawPileRef.value.getBoundingClientRect()
-  const drawCx   = drawRect.left + drawRect.width  / 2
-  const drawCy   = drawRect.top  + drawRect.height / 2
-
-  const ghosts = []
-  for (let i = 0; i < cards.length; i++) {
-    const el = cardRefs.value[startIndex + i]
-    if (!el) continue
-    const cardRect = el.getBoundingClientRect()
-    const w = cardRect.width, h = cardRect.height
-    ghosts.push({
-      id:       `deal-${Date.now()}-${startIndex + i}`,
-      icon:     cards[i].icon,
-      cardId:   cards[i].id,
-      w, h,
-      left:     drawCx - w / 2,
-      top:      drawCy - h / 2,
-      tx: 0, ty: 0,
-      destLeft: cardRect.left,
-      destTop:  cardRect.top,
-    })
-  }
-  if (!ghosts.length) return
-
-  flyCards.value = [...flyCards.value, ...ghosts]
-  await nextTick()
-
-  return new Promise(resolve => {
-    ghosts.forEach((ghost, i) => {
-      setTimeout(() => {
-        const g = flyCards.value.find(x => x.id === ghost.id)
-        if (g) { g.tx = ghost.destLeft - ghost.left; g.ty = ghost.destTop - ghost.top }
-        setTimeout(() => {
-          dealingSet.value = new Set([...dealingSet.value].filter(id => id !== ghost.cardId))
-        }, 300)
-      }, i * 75)
-    })
-    setTimeout(() => {
-      flyCards.value = flyCards.value.filter(g => !ghosts.some(x => x.id === g.id))
-      resolve()
-    }, ghosts.length * 75 + 380)
-  })
-}
-
-// Shuffle animation on the discard pile, then "move" it to draw pile.
-async function runShuffleAnimation() {
-  discardShuffling.value = true
-  await new Promise(resolve => setTimeout(resolve, 650))
-  discardShuffling.value = false
-}
-
-async function runDealAnimation(cards) {
-  if (!cards.length) return
-  dealingSet.value = new Set(cards.map(c => c.id))
-  await nextTick()
-
-  const info = gameStore.shuffleInfo  // { cardsBeforeShuffle } or null
-  if (info) {
-    const splitAt = info.cardsBeforeShuffle
-    if (splitAt > 0) {
-      await dealBatch(cards.slice(0, splitAt), 0)
-    }
-    await runShuffleAnimation()
-    await dealBatch(cards.slice(splitAt), splitAt)
-  } else {
-    await dealBatch(cards, 0)
-  }
-
-  dealingSet.value = new Set()
-}
+const {
+  flyCard, flyCards, dealingSet, discardShuffling,
+  isTaken, isFlying,
+  runDiscardAnimation, runDealAnimation, flyCardToSlot,
+  dealtPhaseKey,
+} = useCardAnimations({ slotRefs, cardRefs, drawPileRef, discardPileRef })
 
 // ── Watchers ──────────────────────────────────────────────────────────────────
 
@@ -319,8 +171,6 @@ watch(() => gameStore.phase, (phase) => {
 watch(() => gameStore.availableCards, async (cards) => {
   if (gameStore.phase !== 'card_selection') return
   if (!cards.length) return
-  // If the player has already submitted (or has cards selected), a round_ready /
-  // discard sequence is coming — let the discardingCards watcher deal the new hand.
   if (gameStore.turnSubmitted || gameStore.selectedCards.length > 0) return
   const key = cards[0]?.id ?? null
   if (dealtPhaseKey.value === key) return
@@ -329,7 +179,7 @@ watch(() => gameStore.availableCards, async (cards) => {
   await runDealAnimation(cards)
 })
 
-// ── Card selection (single fly) ───────────────────────────────────────────────
+// ── Card interaction ──────────────────────────────────────────────────────────
 
 const onCardClick = async (card, idx) => {
   if (isTaken(card.id)) return
@@ -343,29 +193,8 @@ const onCardClick = async (card, idx) => {
     return
   }
 
-  const from = cardEl.getBoundingClientRect()
-  const to   = slotEl.getBoundingClientRect()
-
-  flyCard.value = {
-    icon: card.icon,
-    left: from.left + from.width  / 2 - 32,
-    top:  from.top  + from.height / 2 - 32,
-    tx: 0,
-    ty: 0,
-  }
-  flyingIds.value = new Set([...flyingIds.value, card.id])
-
-  await nextTick()
-  requestAnimationFrame(() => {
-    flyCard.value.tx = (to.left + to.width  / 2 - 32) - flyCard.value.left
-    flyCard.value.ty = (to.top  + to.height / 2 - 32) - flyCard.value.top
-  })
-
-  setTimeout(() => {
-    gameStore.selectCard(card.id)
-    flyingIds.value = new Set([...flyingIds.value].filter(id => id !== card.id))
-    flyCard.value = null
-  }, 380)
+  await flyCardToSlot(card, cardEl, slotEl)
+  gameStore.selectCard(card.id)
 }
 
 const deselectSlot = (slotIdx) => {
