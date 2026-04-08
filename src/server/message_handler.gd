@@ -14,6 +14,7 @@ signal countdown_tick(seconds: int)
 
 var ws_server: WebSocketServer
 var game_manager: GameManager
+var turn_manager: TurnManager
 var client_to_player: Dictionary = {}  # Maps client_id to player_id
 var rematch_requests: Dictionary = {}  # player_id -> true
 var _countdown_active: bool = false
@@ -21,6 +22,7 @@ var _countdown_active: bool = false
 func _init(server: WebSocketServer, manager: GameManager, tm: TurnManager) -> void:
 	ws_server = server
 	game_manager = manager
+	turn_manager = tm
 
 	# Register message handlers
 	ws_server.add_message_handler("join", _on_join_message)
