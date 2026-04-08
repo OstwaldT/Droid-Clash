@@ -27,7 +27,7 @@ func setup(gm: GameManager, tm: TurnManager) -> void:
 	gm.player_joined.connect(_on_player_joined)
 	gm.player_left.connect(_on_player_left)
 	gm.player_submitted.connect(_on_player_submitted)
-	gm.round_starting.connect(_on_round_starting)
+	tm.round_starting.connect(_on_round_starting)
 	gm.game_started.connect(_on_game_started)
 	tm.turn_executed.connect(_on_turn_executed)
 	layer = 10

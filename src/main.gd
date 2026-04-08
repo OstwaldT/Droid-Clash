@@ -22,9 +22,6 @@ func _ready() -> void:
 	turn_manager = TurnManager.new(game_manager)
 	add_child(turn_manager)
 
-	# Wire TurnManager into GameManager so submit_turn can trigger execution
-	game_manager.turn_manager = turn_manager
-
 	# Network layer
 	ws_server = WebSocketServer.new()
 	add_child(ws_server)

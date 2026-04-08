@@ -123,8 +123,8 @@ func show_result() -> void:
 	var winner_id: int = -1
 	if alive.size() == 1:
 		winner_id = alive[0]
-	elif game_manager.turn_manager and game_manager.turn_manager.provisional_winner_id != -1:
-		winner_id = game_manager.turn_manager.provisional_winner_id
+	elif game_manager.provisional_winner_id != -1:
+		winner_id = game_manager.provisional_winner_id
 
 	# Winner line
 	if winner_id != -1:

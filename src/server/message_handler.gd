@@ -33,7 +33,7 @@ func _init(server: WebSocketServer, manager: GameManager, tm: TurnManager) -> vo
 	ws_server.client_connected.connect(_on_client_connected)
 	ws_server.client_disconnected.connect(_on_client_disconnected)
 	tm.turn_executed.connect(_on_turn_executed)
-	manager.round_starting.connect(_on_round_starting)
+	tm.round_starting.connect(_on_round_starting)
 
 func _on_join_message(client_id: PackedByteArray, message: Dictionary) -> void:
 	var data = message.get("data", {})
@@ -102,7 +102,7 @@ func _on_turn_submit_message(client_id: PackedByteArray, message: Dictionary) ->
 		return
 	
 	# Accept turn
-	if game_manager.submit_turn(player_id, card_ids):
+	if turn_manager.submit_turn(player_id, card_ids):
 		ws_server.send_to_player(client_id, {
 			"type": "turn_accepted",
 			"timestamp": Time.get_ticks_msec(),
@@ -209,7 +209,7 @@ func _broadcast_game_start() -> void:
 			"robots": game_state["robots"],
 			"turnTimeoutSeconds": 30,
 			"playerStatuses": _build_player_statuses(),
-			"turnOrder": game_manager.turn_manager.get_priority_order()
+			"turnOrder": turn_manager.get_priority_order()
 		}
 	})
 
@@ -241,8 +241,8 @@ func _on_turn_executed(events: Array) -> void:
 		var winner_id: int
 		if alive.size() == 1:
 			winner_id = alive[0]
-		elif game_manager.turn_manager and game_manager.turn_manager.provisional_winner_id != -1:
-			winner_id = game_manager.turn_manager.provisional_winner_id
+		elif game_manager.provisional_winner_id != -1:
+			winner_id = game_manager.provisional_winner_id
 		else:
 			winner_id = -1
 		var winner_robot: Robot = game_manager.robots.get(winner_id)
@@ -273,7 +273,7 @@ func _on_turn_executed(events: Array) -> void:
 			"robots": game_state["robots"],
 			"events": EventSerializer.serialize_events(events),
 			"playerStatuses": _build_player_statuses("selecting"),
-			"turnOrder": game_manager.turn_manager.get_priority_order()
+			"turnOrder": turn_manager.get_priority_order()
 		}
 	})
 
