@@ -12,7 +12,7 @@ static func create(type_id: int) -> Card:
 		Card.TYPE_MOVE:       return CardMove.new()
 		Card.TYPE_TURN_LEFT:  return CardTurnLeft.new()
 		Card.TYPE_TURN_RIGHT: return CardTurnRight.new()
-		Card.TYPE_RUSH:       return CardSprint.new()
+		Card.TYPE_SPRINT:     return CardSprint.new()
 		Card.TYPE_180:        return Card180.new()
 		Card.TYPE_ATTACK:     return CardAttack.new()
 		Card.TYPE_SHOOT:      return CardShoot.new()

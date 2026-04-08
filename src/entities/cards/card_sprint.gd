@@ -3,7 +3,7 @@ extends Card
 class_name CardSprint
 
 func _init() -> void:
-	type_id     = TYPE_RUSH
+	type_id     = TYPE_SPRINT
 	card_name   = "Sprint"
 	icon        = "🦅"
 	description = "Move your robot 2 hexes forward. Stops early if blocked or fallen."

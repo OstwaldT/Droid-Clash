@@ -18,8 +18,8 @@ var _rematch_icons: Dictionary = {}  # player_id -> Label, updated as players op
 
 func setup(gm: GameManager) -> void:
 	game_manager = gm
-	# Panel is shown explicitly by GameBoard3D after animations complete,
-	# not directly from game_ended signal, so we don't connect here.
+	# Hide on rematch so GameBoard3D doesn't need to know about this panel
+	gm.game_started.connect(func() -> void: visible = false)
 	layer   = 20
 	visible = false
 	_build_ui()

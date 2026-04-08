@@ -38,7 +38,7 @@ func play(events: Array) -> void:
 			Card.TYPE_MOVE:
 				await _play_move(visual, event)
 
-			Card.TYPE_RUSH:
+			Card.TYPE_SPRINT:
 				await _play_rush(visual, event)
 
 			Card.TYPE_TURN_LEFT, \

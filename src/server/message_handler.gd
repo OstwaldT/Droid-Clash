@@ -2,10 +2,6 @@ extends Node
 
 class_name MessageHandler
 
-signal handle_join(client_id: int, data: Dictionary)
-signal handle_turn_submit(client_id: int, data: Dictionary)
-signal handle_ready(client_id: int, data: Dictionary)
-signal handle_leave(client_id: int, data: Dictionary)
 ## Emitted whenever the rematch request set changes. Carries a copy of the
 ## requests Dictionary (player_id -> true) so the game-over panel can update.
 signal rematch_status_updated(requests: Dictionary)
@@ -15,7 +11,8 @@ signal countdown_tick(seconds: int)
 var ws_server: WebSocketServer
 var game_manager: GameManager
 var turn_manager: TurnManager
-var client_to_player: Dictionary = {}  # Maps client_id to player_id
+var client_to_player: Dictionary = {}  # client_id (int) -> player_id
+var _player_to_client: Dictionary = {}  # player_id -> client_id (int)
 var rematch_requests: Dictionary = {}  # player_id -> true
 var _countdown_active: bool = false
 
@@ -37,7 +34,7 @@ func _init(server: WebSocketServer, manager: GameManager, tm: TurnManager) -> vo
 	tm.turn_executed.connect(_on_turn_executed)
 	tm.round_starting.connect(_on_round_starting)
 
-func _on_join_message(client_id: PackedByteArray, message: Dictionary) -> void:
+func _on_join_message(client_id: int, message: Dictionary) -> void:
 	var data = message.get("data", {})
 	var player_name = data.get("playerName", "").strip_edges()
 
@@ -57,11 +54,12 @@ func _on_join_message(client_id: PackedByteArray, message: Dictionary) -> void:
 			return
 	
 	var player_id = ws_server.register_client(client_id)
-	if not game_manager.add_player(player_id, player_name, client_id):
+	if not game_manager.add_player(player_id, player_name):
 		ws_server._send_error(client_id, "GAME_FULL", "Game is full")
 		return
 	
 	client_to_player[client_id] = player_id
+	_player_to_client[player_id] = client_id
 	
 	# Send connection confirmation
 	ws_server.send_to_player(client_id, {
@@ -78,7 +76,7 @@ func _on_join_message(client_id: PackedByteArray, message: Dictionary) -> void:
 	# Broadcast player joined
 	_broadcast_player_list()
 
-func _on_turn_submit_message(client_id: PackedByteArray, message: Dictionary) -> void:
+func _on_turn_submit_message(client_id: int, message: Dictionary) -> void:
 	var player_id = client_to_player.get(client_id, -1)
 	if player_id == -1:
 		ws_server._send_error(client_id, "PLAYER_NOT_FOUND", "Player not found")
@@ -117,7 +115,7 @@ func _on_turn_submit_message(client_id: PackedByteArray, message: Dictionary) ->
 		# Broadcast updated statuses so other clients see this player as "submitted"
 		_broadcast_player_statuses()
 
-func _on_ready_message(client_id: PackedByteArray, message: Dictionary) -> void:
+func _on_ready_message(client_id: int, message: Dictionary) -> void:
 	var player_id = client_to_player.get(client_id, -1)
 	if player_id == -1:
 		return
@@ -157,11 +155,12 @@ func _start_countdown() -> void:
 	game_manager.start_game()
 	_broadcast_game_start()
 
-func _on_leave_message(client_id: PackedByteArray, message: Dictionary) -> void:
+func _on_leave_message(client_id: int, message: Dictionary) -> void:
 	var player_id = client_to_player.get(client_id, -1)
 	if player_id != -1:
 		game_manager.remove_player(player_id)
 		client_to_player.erase(client_id)
+		_player_to_client.erase(player_id)
 		ws_server.unregister_client(client_id)
 		_broadcast_player_list()
 
@@ -169,6 +168,10 @@ func _on_client_connected(_player_id: int) -> void:
 	pass
 
 func _on_client_disconnected(player_id: int) -> void:
+	var client_id = _player_to_client.get(player_id, -1)
+	if client_id != -1:
+		client_to_player.erase(client_id)
+		_player_to_client.erase(player_id)
 	game_manager.remove_player(player_id)
 	_broadcast_player_list()
 
@@ -281,9 +284,8 @@ func _on_turn_executed(events: Array) -> void:
 
 ## Send a player their current 6-card hand as a private message.
 func _send_hand_update(player_id: int) -> void:
-	var player_info: Dictionary = game_manager.players.get(player_id, {})
-	var client_id = player_info.get("client_id")
-	if not client_id:
+	var client_id: int = _player_to_client.get(player_id, -1)
+	if client_id == -1:
 		return
 	ws_server.send_to_player(client_id, {
 		"type": "hand_update",
@@ -320,7 +322,7 @@ func _broadcast_player_statuses(override_status: String = "") -> void:
 
 ## Called by GameBoard3D after all round animations finish.
 ## Signals clients that they may now transition to the next phase.
-func _broadcast_round_ready() -> void:
+func on_round_display_complete() -> void:
 	ws_server.broadcast({
 		"type": "round_ready",
 		"timestamp": Time.get_ticks_msec(),
@@ -332,7 +334,7 @@ func _on_round_starting() -> void:
 	_broadcast_player_statuses("acting")
 
 ## Handle a rematch request from a client.
-func _on_rematch_message(client_id: PackedByteArray, _message: Dictionary) -> void:
+func _on_rematch_message(client_id: int, _message: Dictionary) -> void:
 	var player_id = client_to_player.get(client_id, -1)
 	if player_id == -1 or game_manager.phase != GameManager.GamePhase.GAME_OVER:
 		return

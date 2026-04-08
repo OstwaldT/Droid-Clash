@@ -2,6 +2,14 @@ extends Node
 
 class_name TurnManager
 
+## Emitted after every round with the full ordered event log.
+## Each event dict contains:
+##   playerId: int          — which player's card this was
+##   instanceId: int        — unique card instance from the player's hand
+##   typeId: int            — Card.TYPE_* constant identifying the card
+##   type: String           — event category e.g. "move", "attack", "shoot", "blocked", "turn"
+##   success: bool          — whether the action succeeded
+##   …card-specific keys…   — e.g. "from"/"to" for moves, "targetId"/"damage" for attacks
 signal turn_executed(events: Array)
 signal round_complete
 signal round_starting

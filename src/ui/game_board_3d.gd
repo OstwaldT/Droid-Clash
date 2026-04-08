@@ -5,9 +5,10 @@ class_name GameBoard3D
 ## Emitted after all round animations have fully played out.
 ## MessageHandler listens to this to send round_ready to clients.
 signal round_display_complete
+## Emitted when the game ends and the result overlay should be shown.
+signal game_over_triggered
 
 var game_manager: GameManager
-var game_over_panel: GameOverPanel = null  # set by main.gd after both are created
 var _renderer: HexGridRenderer
 var _orchestrator: RoundAnimationOrchestrator
 var _robot_visuals: Dictionary = {}  # player_id -> RobotVisual
@@ -59,8 +60,6 @@ func _on_player_left(player_id: int) -> void:
 
 ## Called on rematch — regenerate tiles and snap robots to new positions.
 func _on_game_restarted() -> void:
-	if game_over_panel:
-		game_over_panel.visible = false
 	_renderer.clear()
 	_renderer.generate(game_manager.grid)
 	for player_id in game_manager.robots.keys():
@@ -75,7 +74,7 @@ func _on_game_restarted() -> void:
 
 func _on_turn_executed(events: Array) -> void:
 	await _orchestrator.play(events)
-	if game_manager.phase == GameManager.GamePhase.GAME_OVER and game_over_panel:
+	if game_manager.phase == GameManager.GamePhase.GAME_OVER:
 		await get_tree().create_timer(0.5).timeout
-		game_over_panel.show_result()
+		game_over_triggered.emit()
 	round_display_complete.emit()

@@ -51,7 +51,7 @@ func _process(_delta: float) -> void:
 				continue
 			
 			var message_string = data.get_string_from_utf8()
-			_handle_message(PackedByteArray([client_id]), message_string)
+			_handle_message(client_id, message_string)
 	
 	# Clean up disconnected clients
 	for client_id in disconnected_clients:
@@ -62,16 +62,13 @@ func _process(_delta: float) -> void:
 			client_disconnected.emit(player_id)
 			print("Player %d (client %d) disconnected" % [player_id, client_id])
 
-func _handle_message(client_id: PackedByteArray, message_string: String) -> void:
-	# Convert PackedByteArray back to int for lookups
-	var client_id_int = client_id[0] if client_id.size() > 0 else -1
-	
+func _handle_message(client_id: int, message_string: String) -> void:
 	var message = JSON.parse_string(message_string)
 	if message == null:
 		_send_error(client_id, "INVALID_JSON", "Failed to parse JSON message")
 		return
 	
-	message_received.emit(clients.get(client_id_int, -1), message)
+	message_received.emit(clients.get(client_id, -1), message)
 	
 	var message_type = message.get("type", "")
 	if message_type in message_handlers:
@@ -80,26 +77,20 @@ func _handle_message(client_id: PackedByteArray, message_string: String) -> void
 func add_message_handler(message_type: String, handler: Callable) -> void:
 	message_handlers[message_type] = handler
 
-func register_client(client_id: PackedByteArray) -> int:
-	# Convert PackedByteArray to int
-	var client_id_int = client_id[0] if client_id.size() > 0 else -1
-	
+func register_client(client_id: int) -> int:
 	var player_id = next_player_id
-	clients[client_id_int] = player_id
+	clients[client_id] = player_id
 	next_player_id += 1
 	
 	client_connected.emit(player_id)
-	print("Client %d connected as Player %d" % [client_id_int, player_id])
+	print("Client %d connected as Player %d" % [client_id, player_id])
 	
 	return player_id
 
-func unregister_client(client_id: PackedByteArray) -> void:
-	# Convert PackedByteArray to int
-	var client_id_int = client_id[0] if client_id.size() > 0 else -1
-	
-	var player_id = clients.get(client_id_int, -1)
+func unregister_client(client_id: int) -> void:
+	var player_id = clients.get(client_id, -1)
 	if player_id != -1:
-		clients.erase(client_id_int)
+		clients.erase(client_id)
 		client_disconnected.emit(player_id)
 		print("Player %d disconnected" % player_id)
 
@@ -111,23 +102,16 @@ func broadcast(message: Dictionary) -> void:
 		if client_id in websocket_peers:
 			websocket_peers[client_id].send(buffer)
 
-func send_to_player(client_id: PackedByteArray, message: Dictionary) -> void:
+func send_to_player(client_id: int, message: Dictionary) -> void:
 	var json_str = JSON.stringify(message)
 	var buffer = json_str.to_utf8_buffer()
 	
-	# Convert PackedByteArray to int
-	var client_id_int = client_id[0] if client_id.size() > 0 else -1
-	
-	print("Sending to client %d, message type: %s" % [client_id_int, message.get("type", "unknown")])
-	print("Available websocket peers: %s" % websocket_peers.keys())
-	
-	if client_id_int in websocket_peers:
-		websocket_peers[client_id_int].send(buffer)
-		print("Message sent successfully")
+	if client_id in websocket_peers:
+		websocket_peers[client_id].send(buffer)
 	else:
-		print("ERROR: Client %d not found in websocket_peers!" % client_id_int)
+		push_warning("send_to_player: client %d not found" % client_id)
 
-func _send_error(client_id: PackedByteArray, code: String, message_text: String) -> void:
+func _send_error(client_id: int, code: String, message_text: String) -> void:
 	var error_msg = {
 		"type": "error",
 		"timestamp": Time.get_ticks_msec(),
@@ -139,10 +123,8 @@ func _send_error(client_id: PackedByteArray, code: String, message_text: String)
 	}
 	send_to_player(client_id, error_msg)
 
-func get_player_id_from_client(client_id: PackedByteArray) -> int:
-	# Convert PackedByteArray to int
-	var client_id_int = client_id[0] if client_id.size() > 0 else -1
-	return clients.get(client_id_int, -1)
+func get_player_id_from_client(client_id: int) -> int:
+	return clients.get(client_id, -1)
 
 func get_all_player_ids() -> Array:
 	return clients.values()

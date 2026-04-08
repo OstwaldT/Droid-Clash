@@ -22,7 +22,7 @@ var map_size: int = 5  # HexGrid side length: 3=Small, 4=Medium, 5=Large
 ## Set by TurnManager when exactly one robot remains alive mid-round.
 var provisional_winner_id: int = -1
 
-var players: Dictionary = {}       # player_id -> {name, client_id, submitted, color, submitted_instance_ids}
+var players: Dictionary = {}       # player_id -> {name, submitted, color, submitted_instance_ids}
 var robots: Dictionary = {}        # player_id -> Robot
 var player_decks: Dictionary = {}  # player_id -> Deck
 var grid: HexGrid
@@ -32,7 +32,7 @@ func _init() -> void:
 	grid.generate_map()
 	set_process(true)
 
-func add_player(player_id: int, player_name: String, client_id: PackedByteArray) -> bool:
+func add_player(player_id: int, player_name: String) -> bool:
 	if players.size() >= max_players:
 		return false
 	
@@ -41,7 +41,6 @@ func add_player(player_id: int, player_name: String, client_id: PackedByteArray)
 
 	players[player_id] = {
 		"name": player_name,
-		"client_id": client_id,
 		"submitted": false,
 		"color": color,
 		"submitted_instance_ids": []

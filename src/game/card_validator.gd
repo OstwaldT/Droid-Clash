@@ -22,6 +22,9 @@ static func validate(
 	if card_ids.size() != REQUIRED_CARDS:
 		return _fail("INVALID_CARDS", "Must select exactly %d cards" % REQUIRED_CARDS)
 
+	if hand_instance_ids == null or hand_instance_ids.is_empty():
+		return _fail("NO_HAND", "No cards available to play")
+
 	var seen := {}
 	for inst_id in card_ids:
 		if inst_id not in hand_instance_ids:
