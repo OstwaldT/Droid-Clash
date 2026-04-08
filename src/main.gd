@@ -35,8 +35,6 @@ func _ready() -> void:
 	game_board.setup(game_manager, turn_manager)
 	# Wire board animation-complete signal to message_handler so it can send round_ready
 	game_board.round_display_complete.connect(message_handler.on_round_display_complete)
-	# Wire game-over signal from board to the overlay panel
-	game_board.game_over_triggered.connect(game_over_panel.show_result)
 
 	_setup_3d_scene()
 
@@ -59,6 +57,8 @@ func _ready() -> void:
 	game_over_panel = GameOverPanel.new()
 	add_child(game_over_panel)
 	game_over_panel.setup(game_manager)
+	# Wire game-over signal from board to the overlay panel
+	game_board.game_over_triggered.connect(game_over_panel.show_result)
 	# Update the rematch list on the panel whenever a player opts in
 	message_handler.rematch_status_updated.connect(game_over_panel.update_rematch)
 
