@@ -1,9 +1,8 @@
 import { usePlayerStore } from "@/stores/playerStore";
 import { useGameStore } from "@/stores/gameStore";
 
-const WS_URL = import.meta.env.DEV
-  ? "ws://192.168.1.32:8080"
-  : process.env.VITE_WS_URL || "ws://localhost:8080";
+const WS_URL = import.meta.env.VITE_WS_URL
+  || `ws://${window.location.hostname}:8080`;
 
 class WebSocketClient {
   constructor() {

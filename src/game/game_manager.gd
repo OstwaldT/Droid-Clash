@@ -4,12 +4,12 @@ class_name GameManager
 
 signal game_started
 signal game_ended
+signal game_resetting
 signal player_joined(player_id: int, player_name: String)
 signal player_left(player_id: int)
 signal player_ready(player_id: int)
 signal player_submitted(player_id: int)
 signal turn_changed(turn_number: int)
-signal round_starting
 
 enum GamePhase { LOBBY, PLAYING, GAME_OVER }
 
@@ -19,13 +19,13 @@ var current_turn: int = 0
 var max_players: int = 8
 var turn_timeout: float = 30.0
 var map_size: int = 5  # HexGrid side length: 3=Small, 4=Medium, 5=Large
+## Set by TurnManager when exactly one robot remains alive mid-round.
+var provisional_winner_id: int = -1
 
 var players: Dictionary = {}       # player_id -> {name, client_id, submitted, color, submitted_instance_ids}
 var robots: Dictionary = {}        # player_id -> Robot
 var player_decks: Dictionary = {}  # player_id -> Deck
 var grid: HexGrid
-var turn_queue: Array = []
-var turn_manager: TurnManager = null  # set by main.gd after TurnManager is created
 
 func _init() -> void:
 	grid = HexGrid.new(5)  # hexagonal board, side length 5 (radius 4, 61 tiles)
@@ -52,8 +52,6 @@ func add_player(player_id: int, player_name: String, client_id: PackedByteArray)
 	robots[player_id] = Robot.new(player_id, player_name, start_pos, color)
 	robots[player_id].direction = randi() % 6
 	player_decks[player_id] = Deck.new()
-	if turn_manager:
-		turn_manager.register_player(player_id)
 	
 	player_joined.emit(player_id, player_name)
 	print("Player %d (%s) joined" % [player_id, player_name])
@@ -65,8 +63,6 @@ func remove_player(player_id: int) -> void:
 		players.erase(player_id)
 		robots.erase(player_id)
 		player_decks.erase(player_id)
-		if turn_manager:
-			turn_manager.unregister_player(player_id)
 		player_left.emit(player_id)
 		print("Player %d left" % player_id)
 		
@@ -118,23 +114,15 @@ func get_all_players() -> Array:
 			result.append(robot.to_dict())
 	return result
 
-func submit_turn(player_id: int, instance_ids: Array) -> bool:
+## Record a player's card submission. Called by TurnManager; does not trigger
+## round execution — TurnManager owns that decision.
+func record_submission(player_id: int, instance_ids: Array) -> bool:
 	if player_id not in players:
 		return false
 
 	players[player_id]["submitted"] = true
 	players[player_id]["submitted_instance_ids"] = instance_ids
 	player_submitted.emit(player_id)
-
-	# Forward card selection to TurnManager
-	if turn_manager:
-		turn_manager.submit_turn(player_id, instance_ids)
-
-	# Execute the round as soon as every alive player has submitted
-	if turn_manager and are_all_turns_submitted():
-		round_starting.emit()
-		turn_manager.execute_round()
-
 	return true
 
 func are_all_turns_submitted() -> bool:
@@ -192,10 +180,9 @@ func resolve_and_redraw_player_hand(player_id: int) -> Array:
 func reset_for_rematch() -> void:
 	phase = GamePhase.LOBBY
 	current_turn = 0
+	provisional_winner_id = -1
 	grid = HexGrid.new(map_size)
 	grid.generate_map()  # fresh map layout each rematch
-	if turn_manager:
-		turn_manager.reset_priority()
 	var occupied: Array = []
 	for player_id in players.keys():
 		var start_pos := grid.get_spawn_hex(occupied)
@@ -207,9 +194,8 @@ func reset_for_rematch() -> void:
 		player_decks[player_id] = Deck.new(DeckConfig.preset(arch))
 		players[player_id]["submitted"] = false
 		players[player_id]["submitted_instance_ids"] = []
-		if turn_manager:
-			turn_manager.register_player(player_id)
 	print("Game reset for rematch with %d players" % players.size())
+	game_resetting.emit()
 
 func to_dict() -> Dictionary:
 	return {

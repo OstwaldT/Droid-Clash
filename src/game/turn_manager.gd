@@ -4,22 +4,20 @@ class_name TurnManager
 
 signal turn_executed(events: Array)
 signal round_complete
+signal round_starting
 
 var game_manager: GameManager
-var grid: HexGrid
 var card_submissions: Dictionary = {}  # player_id -> [instance_id, ...]
 
 ## Rotating priority queue: the player at index 0 goes first.
 ## After each round the first player is moved to the back.
 var _priority_order: Array = []
 
-## Set to a player_id the first time exactly one robot remains alive during a round.
-## Used by message_handler to declare a winner even if that robot later kills itself.
-var provisional_winner_id: int = -1
-
 func _init(manager: GameManager) -> void:
 	game_manager = manager
-	grid = manager.grid
+	manager.player_joined.connect(_on_player_joined)
+	manager.player_left.connect(_on_player_left)
+	manager.game_resetting.connect(_on_game_resetting)
 
 ## Register a new player into the priority order (called when they join).
 func register_player(player_id: int) -> void:
@@ -34,12 +32,17 @@ func unregister_player(player_id: int) -> void:
 func get_priority_order() -> Array:
 	return _priority_order.duplicate()
 
-## Submit cards for a player's turn
+## Accept a player's card submission. Records state on GameManager, then
+## fires the round if every alive player has now submitted.
 func submit_turn(player_id: int, card_ids: Array) -> bool:
 	if player_id not in game_manager.robots:
 		return false
-	
+	if not game_manager.record_submission(player_id, card_ids):
+		return false
 	card_submissions[player_id] = card_ids
+	if game_manager.are_all_turns_submitted():
+		round_starting.emit()
+		execute_round()
 	return true
 
 ## Execute all submitted turns in order
@@ -55,12 +58,12 @@ func execute_round() -> Array:
 			players_to_execute.append(player_id)
 
 	# Execute each player's cards in sequence
-	provisional_winner_id = -1
+	game_manager.provisional_winner_id = -1
 	var winner_locked := false
 
 	for player_id in players_to_execute:
 		# Once a winner is locked, skip all players except the winner
-		if winner_locked and player_id != provisional_winner_id:
+		if winner_locked and player_id != game_manager.provisional_winner_id:
 			continue
 
 		var instance_ids = card_submissions.get(player_id, [])
@@ -69,7 +72,7 @@ func execute_round() -> Array:
 		for instance_id in instance_ids:
 			# Skip remaining cards if this robot died and is NOT the locked winner.
 			# The winner continues executing (even unto death) so their cards are animated.
-			if not robot.is_alive() and not (winner_locked and player_id == provisional_winner_id):
+			if not robot.is_alive() and not (winner_locked and player_id == game_manager.provisional_winner_id):
 				break
 
 			var type_id := game_manager.get_card_type_id(player_id, instance_id)
@@ -80,17 +83,17 @@ func execute_round() -> Array:
 			if card == null:
 				continue
 
-			var result := card.execute(robot, grid, game_manager.robots)
+			var result := card.execute(robot, game_manager.grid, game_manager.robots)
 
 			var event := {"playerId": player_id, "instanceId": instance_id, "typeId": type_id}
 			event.merge(result)
 			events.append(event)
 
 			# Lock in provisional winner the first time exactly one robot remains alive
-			if provisional_winner_id == -1:
+			if game_manager.provisional_winner_id == -1:
 				var alive_now := game_manager.get_alive_players()
 				if alive_now.size() == 1:
-					provisional_winner_id = alive_now[0]
+					game_manager.provisional_winner_id = alive_now[0]
 					winner_locked = true
 
 	# Rotate priority: first player this round goes last next round
@@ -109,12 +112,20 @@ func execute_round() -> Array:
 
 	return events
 
-## Check if round is ready to execute
-func is_ready_to_execute() -> bool:
-	return game_manager.are_all_turns_submitted()
-
 ## Reset priority order and submissions for a rematch.
-## GameManager calls this before re-registering all players.
 func reset_priority() -> void:
 	_priority_order.clear()
 	card_submissions.clear()
+
+# --- GameManager signal handlers ---
+
+func _on_player_joined(player_id: int, _player_name: String) -> void:
+	register_player(player_id)
+
+func _on_player_left(player_id: int) -> void:
+	unregister_player(player_id)
+
+func _on_game_resetting() -> void:
+	reset_priority()
+	for player_id in game_manager.players.keys():
+		register_player(player_id)

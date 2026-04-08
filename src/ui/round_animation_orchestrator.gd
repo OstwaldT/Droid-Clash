@@ -140,6 +140,9 @@ func _play_attack(visual: RobotVisual, event: Dictionary) -> void:
 		if target_visual:
 			var target_robot: Robot = _game_manager.robots.get(target_id)
 			if target_robot and not target_robot.is_alive():
+				# Snap to correct tile before exploding so drift doesn't make it
+				# look like the robot is sinking below the floor.
+				target_visual.move_to(_renderer.hex_to_robot_pos(target_robot.position.x, target_robot.position.y), false)
 				target_visual.explode()
 			else:
 				target_visual.flash_hit()
@@ -149,7 +152,7 @@ func _play_attack(visual: RobotVisual, event: Dictionary) -> void:
 
 func _play_shoot(visual: RobotVisual, event: Dictionary) -> void:
 	var hit_pos: Vector2i = event.get("hit_pos", Vector2i.ZERO)
-	var target_world := _renderer.hex_to_world(hit_pos.x, hit_pos.y)
+	var target_world := _renderer.hex_to_robot_pos(hit_pos.x, hit_pos.y)
 	visual.shoot_rocket(target_world)
 	await get_tree().create_timer(0.35).timeout
 	if event.get("success", false):
@@ -158,6 +161,7 @@ func _play_shoot(visual: RobotVisual, event: Dictionary) -> void:
 		if target_visual:
 			var target_robot: Robot = _game_manager.robots.get(target_id)
 			if target_robot and not target_robot.is_alive():
+				target_visual.move_to(_renderer.hex_to_robot_pos(target_robot.position.x, target_robot.position.y), false)
 				target_visual.explode()
 			else:
 				target_visual.flash_hit()
@@ -176,3 +180,8 @@ func _sync_all_visuals() -> void:
 		visual.update_health(robot.health, robot.max_health)
 		if not robot.is_alive():
 			visual.mark_dead()
+		else:
+			# Hard-snap position to the authoritative tile so any positional
+			# drift from tweens (e.g. strike_forward, timing edge-cases) is
+			# corrected before the next round begins.
+			visual.move_to(_renderer.hex_to_robot_pos(robot.position.x, robot.position.y), false)
