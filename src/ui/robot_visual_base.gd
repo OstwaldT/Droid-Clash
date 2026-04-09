@@ -6,10 +6,10 @@ class_name RobotVisualBase
 ## Animation effects are in the RobotVisual subclass.
 ## Robot body is built procedurally from BoxMesh parts (voxel style).
 
-const LABEL_Y:   float = 0.90
-const HP_BAR_Y:  float = 1.15
-const HP_BAR_W:  float = 0.90
-const HP_BAR_H:  float = 0.09
+const LABEL_Y:   float = 1.70
+const HP_BAR_Y:  float = 2.00
+const HP_BAR_W:  float = 1.40
+const HP_BAR_H:  float = 0.12
 
 var player_id:   int
 var robot_color: Color
@@ -41,18 +41,18 @@ func _build_model(_pid: int, color: Color) -> void:
 	# Parts use a neutral grey base stored on the mesh's own material so that
 	# _tint_meshes(color) multiplies it cleanly: grey 1.0 = full player color,
 	# grey 0.55 = dark shadow tone, etc.
-	_model_root.add_child(_make_box(Vector3(0.50, 0.30, 0.38), Vector3( 0.00, 0.20, 0.00), 1.00))  # body
-	_model_root.add_child(_make_box(Vector3(0.30, 0.24, 0.28), Vector3( 0.00, 0.49, 0.00), 0.82))  # head
-	_model_root.add_child(_make_box(Vector3(0.10, 0.10, 0.44), Vector3(-0.22, 0.05, 0.00), 0.55))  # left track
-	_model_root.add_child(_make_box(Vector3(0.10, 0.10, 0.44), Vector3( 0.22, 0.05, 0.00), 0.55))  # right track
-	_model_root.add_child(_make_box(Vector3(0.04, 0.15, 0.04), Vector3( 0.10, 0.69, 0.00), 0.65))  # antenna
+	_model_root.add_child(_make_box(Vector3(1.00, 0.60, 0.76), Vector3( 0.00, 0.40, 0.00), 1.00))  # body
+	_model_root.add_child(_make_box(Vector3(0.60, 0.48, 0.56), Vector3( 0.00, 0.98, 0.00), 0.82))  # head
+	_model_root.add_child(_make_box(Vector3(0.20, 0.20, 1.10), Vector3(-0.44, 0.10, 0.00), 0.55))  # left track
+	_model_root.add_child(_make_box(Vector3(0.20, 0.20, 1.10), Vector3( 0.44, 0.10, 0.00), 0.55))  # right track
+	_model_root.add_child(_make_box(Vector3(0.08, 0.30, 0.08), Vector3( 0.20, 1.38, 0.00), 0.65))  # antenna
 	_tint_meshes(_model_root, color)
 
 	# Eyes: emissive cyan glow — stored separately so _tint_meshes ignores them.
 	_eyes_root = Node3D.new()
 	add_child(_eyes_root)
-	_eyes_root.add_child(_make_eye(Vector3(-0.08, 0.49, 0.145)))
-	_eyes_root.add_child(_make_eye(Vector3( 0.08, 0.49, 0.145)))
+	_eyes_root.add_child(_make_eye(Vector3(-0.16, 0.98, 0.29)))
+	_eyes_root.add_child(_make_eye(Vector3( 0.16, 0.98, 0.29)))
 
 ## Create a tintable voxel part. The grey value sets the neutral base color so
 ## _tint_meshes can multiply it by the player color to get relative shading.
@@ -73,7 +73,7 @@ func _make_box(size: Vector3, pos: Vector3, gray: float) -> MeshInstance3D:
 func _make_eye(pos: Vector3) -> MeshInstance3D:
 	var mi  := MeshInstance3D.new()
 	var bm  := BoxMesh.new()
-	bm.size = Vector3(0.07, 0.05, 0.03)
+	bm.size = Vector3(0.14, 0.10, 0.06)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color               = Color(0.85, 0.95, 1.00)
 	mat.emission_enabled           = true
