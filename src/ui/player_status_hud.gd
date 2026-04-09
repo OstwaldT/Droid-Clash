@@ -130,30 +130,35 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	name_lbl.clip_text = true
 	centre.add_child(name_lbl)
 
-	# HP row: bar + "HP: 100"
+	# HP row: bar + value label
 	var hp_row := HBoxContainer.new()
 	hp_row.add_theme_constant_override("separation", 5)
 	centre.add_child(hp_row)
 
-	var hp_bar := ProgressBar.new()
-	hp_bar.min_value = 0
-	hp_bar.max_value = 100
-	hp_bar.value     = robot.health if robot else 100
-	hp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hp_bar.custom_minimum_size   = Vector2(0, 7)
-	hp_bar.show_percentage       = false
-	# Style the fill green
-	var fill_style := StyleBoxFlat.new()
-	fill_style.bg_color = Color(0.18, 0.88, 0.32)
-	fill_style.set_corner_radius_all(3)
-	fill_style.set_content_margin_all(0)
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.12, 0.12, 0.20)
-	bg_style.set_corner_radius_all(3)
-	bg_style.set_content_margin_all(0)
-	hp_bar.add_theme_stylebox_override("fill", fill_style)
-	hp_bar.add_theme_stylebox_override("background", bg_style)
-	hp_row.add_child(hp_bar)
+	# Custom bar: Control containing bg + fill ColorRects
+	var bar_bg := Control.new()
+	bar_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar_bg.custom_minimum_size   = Vector2(0, 7)
+	bar_bg.clip_contents         = true
+	hp_row.add_child(bar_bg)
+
+	var bg_rect := ColorRect.new()
+	bg_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_rect.color = Color(0.12, 0.12, 0.20)
+	bar_bg.add_child(bg_rect)
+
+	var hp_ratio: float = clampf(float(robot.health if robot else 100) / 100.0, 0.0, 1.0)
+	var fill_rect := ColorRect.new()
+	fill_rect.anchor_left   = 0.0
+	fill_rect.anchor_right  = hp_ratio
+	fill_rect.anchor_top    = 0.0
+	fill_rect.anchor_bottom = 1.0
+	fill_rect.offset_left   = 0
+	fill_rect.offset_right  = 0
+	fill_rect.offset_top    = 0
+	fill_rect.offset_bottom = 0
+	fill_rect.color = Color(0.18, 0.88, 0.32)
+	bar_bg.add_child(fill_rect)
 
 	var hp_lbl := Label.new()
 	hp_lbl.text = "%d" % (robot.health if robot else 100)
@@ -175,10 +180,9 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 
 	_player_list.add_child(row)
 	_row_map[player_id] = {
-		"status":   status_lbl,
-		"hp_bar":   hp_bar,
-		"hp_label": hp_lbl,
-		"hp_fill":  fill_style,
+		"status":    status_lbl,
+		"fill_rect": fill_rect,
+		"hp_label":  hp_lbl,
 	}
 
 func _set_status(player_id: int, text: String, color: Color) -> void:
@@ -190,29 +194,25 @@ func _set_status(player_id: int, text: String, color: Color) -> void:
 	lbl.add_theme_color_override("font_color", color)
 
 func _update_health(player_id: int) -> void:
-	var entry: Dictionary = _row_map.get(player_id, {})
-	var hp_bar:   ProgressBar = entry.get("hp_bar")
-	var hp_label: Label       = entry.get("hp_label")
-	var fill_style: StyleBoxFlat = entry.get("hp_fill")
-	if not hp_bar or not hp_label:
+	var entry: Dictionary  = _row_map.get(player_id, {})
+	var fill_rect: ColorRect = entry.get("fill_rect")
+	var hp_label: Label      = entry.get("hp_label")
+	if not fill_rect or not hp_label:
 		return
 	var robot: Robot = game_manager.robots.get(player_id)
 	if not robot:
 		return
 	var ratio: float = clampf(float(robot.health) / float(robot.max_health), 0.0, 1.0)
-	hp_bar.max_value = robot.max_health
-	hp_bar.value     = robot.health
-	hp_label.text    = "%d" % robot.health
-	if fill_style:
-		if ratio > 0.6:
-			fill_style.bg_color = Color(0.18, 0.88, 0.32)
-		elif ratio > 0.3:
-			fill_style.bg_color = Color(0.90, 0.80, 0.05)
-		else:
-			fill_style.bg_color = Color(0.90, 0.15, 0.05)
+	fill_rect.anchor_right = ratio
+	hp_label.text = "%d" % robot.health
+	if ratio > 0.6:
+		fill_rect.color = Color(0.18, 0.88, 0.32)
+	elif ratio > 0.3:
+		fill_rect.color = Color(0.90, 0.80, 0.05)
+	else:
+		fill_rect.color = Color(0.90, 0.15, 0.05)
 	if not robot.is_alive():
-		if hp_label:
-			hp_label.add_theme_color_override("font_color", COLOR_DEAD)
+		hp_label.add_theme_color_override("font_color", COLOR_DEAD)
 
 # --- Signal handlers ---
 
