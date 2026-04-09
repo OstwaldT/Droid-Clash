@@ -4,19 +4,10 @@ class_name RobotVisualBase
 
 ## Handles construction and state-sync for a robot's 3D representation.
 ## Animation effects are in the RobotVisual subclass.
+## Robot body is built procedurally from BoxMesh parts (voxel style).
 
-const SPEEDER_MODELS: Array[String] = [
-	"res://assets/kenney_space-kit/Models/GLTF format/craft_speederA.glb",
-	"res://assets/kenney_space-kit/Models/GLTF format/craft_speederB.glb",
-	"res://assets/kenney_space-kit/Models/GLTF format/craft_speederC.glb",
-	"res://assets/kenney_space-kit/Models/GLTF format/craft_speederD.glb",
-]
-
-const MODEL_SCALE: float = 0.50
-const MODEL_Y: float     = 0.05
-
-const LABEL_Y:   float = 0.75
-const HP_BAR_Y:  float = 1.05
+const LABEL_Y:   float = 0.90
+const HP_BAR_Y:  float = 1.15
 const HP_BAR_W:  float = 0.90
 const HP_BAR_H:  float = 0.09
 
@@ -24,6 +15,7 @@ var player_id:   int
 var robot_color: Color
 
 var _model_root:   Node3D         = null
+var _eyes_root:    Node3D         = null
 var _hp_bar_bg:    MeshInstance3D
 var _hp_bar_fill:  MeshInstance3D
 var _name_label:   Label3D
@@ -42,30 +34,55 @@ func setup(pid: int, pname: String, color: Color) -> void:
 
 # --- Build helpers ---
 
-func _build_model(pid: int, color: Color) -> void:
-	var model_path := SPEEDER_MODELS[pid % SPEEDER_MODELS.size()]
-	var packed := load(model_path) as PackedScene
-	if packed == null:
-		var fallback := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(0.8, 0.3, 1.0)
-		fallback.mesh = bm
-		fallback.position.y = MODEL_Y
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = color
-		fallback.material_override = mat
-		_model_root = Node3D.new()
-		_model_root.add_child(fallback)
-		add_child(_model_root)
-		return
-	_model_root = packed.instantiate() as Node3D
-	# Kenney GLBs have the mesh child offset by [2, 0, 1.5] in local space;
-	# compensate so the model sits centered on the hex tile.
-	_model_root.position = Vector3(MODEL_SCALE * 2.0, MODEL_Y, MODEL_SCALE * 1.5)
-	_model_root.rotation.y = PI  # model faces -Z; our code treats +Z as forward
-	_model_root.scale      = Vector3.ONE * MODEL_SCALE
+func _build_model(_pid: int, color: Color) -> void:
+	_model_root = Node3D.new()
 	add_child(_model_root)
+
+	# Parts use a neutral grey base stored on the mesh's own material so that
+	# _tint_meshes(color) multiplies it cleanly: grey 1.0 = full player color,
+	# grey 0.55 = dark shadow tone, etc.
+	_model_root.add_child(_make_box(Vector3(0.50, 0.30, 0.38), Vector3( 0.00, 0.20, 0.00), 1.00))  # body
+	_model_root.add_child(_make_box(Vector3(0.30, 0.24, 0.28), Vector3( 0.00, 0.49, 0.00), 0.82))  # head
+	_model_root.add_child(_make_box(Vector3(0.10, 0.10, 0.44), Vector3(-0.22, 0.05, 0.00), 0.55))  # left track
+	_model_root.add_child(_make_box(Vector3(0.10, 0.10, 0.44), Vector3( 0.22, 0.05, 0.00), 0.55))  # right track
+	_model_root.add_child(_make_box(Vector3(0.04, 0.15, 0.04), Vector3( 0.10, 0.69, 0.00), 0.65))  # antenna
 	_tint_meshes(_model_root, color)
+
+	# Eyes: emissive cyan glow — stored separately so _tint_meshes ignores them.
+	_eyes_root = Node3D.new()
+	add_child(_eyes_root)
+	_eyes_root.add_child(_make_eye(Vector3(-0.08, 0.49, 0.145)))
+	_eyes_root.add_child(_make_eye(Vector3( 0.08, 0.49, 0.145)))
+
+## Create a tintable voxel part. The grey value sets the neutral base color so
+## _tint_meshes can multiply it by the player color to get relative shading.
+func _make_box(size: Vector3, pos: Vector3, gray: float) -> MeshInstance3D:
+	var mi  := MeshInstance3D.new()
+	var bm  := BoxMesh.new()
+	bm.size = size
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(gray, gray, gray)
+	mat.roughness    = 0.95
+	mat.metallic     = 0.05
+	bm.material = mat  # on mesh (not override) so _tint_meshes reads it via surface_get_material
+	mi.mesh     = bm
+	mi.position = pos
+	return mi
+
+## Create an emissive eye box — fixed cyan glow, never tinted by player color.
+func _make_eye(pos: Vector3) -> MeshInstance3D:
+	var mi  := MeshInstance3D.new()
+	var bm  := BoxMesh.new()
+	bm.size = Vector3(0.07, 0.05, 0.03)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color               = Color(0.85, 0.95, 1.00)
+	mat.emission_enabled           = true
+	mat.emission                   = Color(0.40, 0.75, 1.00)
+	mat.emission_energy_multiplier = 2.5
+	mi.material_override = mat  # override so _tint_meshes (which walks _model_root) ignores it
+	mi.mesh     = bm
+	mi.position = pos
+	return mi
 
 func _build_health_bar() -> void:
 	_hp_bar_bg = MeshInstance3D.new()
@@ -123,13 +140,13 @@ func _tint_meshes(node: Node, color: Color) -> void:
 			var new_mat := StandardMaterial3D.new()
 			if mat is StandardMaterial3D:
 				var src := mat as StandardMaterial3D
+				new_mat.albedo_color = src.albedo_color * color
 				new_mat.roughness    = src.roughness
 				new_mat.metallic     = src.metallic
-				new_mat.albedo_color = src.albedo_color * color
 			else:
 				new_mat.albedo_color = color
-			new_mat.roughness = 0.45
-			new_mat.metallic  = 0.30
+				new_mat.roughness    = 0.95
+				new_mat.metallic     = 0.05
 			mi.set_surface_override_material(i, new_mat)
 	)
 
@@ -188,6 +205,13 @@ func mark_dead() -> void:
 				if mat:
 					mat.albedo_color = Color(0.28, 0.28, 0.28)
 		)
+	if _eyes_root:
+		_walk_meshes(_eyes_root, func(mi: MeshInstance3D) -> void:
+			var mat := mi.material_override as StandardMaterial3D
+			if mat:
+				mat.albedo_color     = Color(0.15, 0.15, 0.15)
+				mat.emission_enabled = false
+		)
 	_name_label.modulate = Color(0.45, 0.45, 0.45)
 	(_hp_bar_fill.material_override as StandardMaterial3D).albedo_color = Color(0.30, 0.30, 0.30)
 	(_hp_bar_bg.material_override   as StandardMaterial3D).albedo_color = Color(0.08, 0.08, 0.08)
@@ -198,6 +222,13 @@ func revive() -> void:
 	scale    = Vector3.ONE
 	if _model_root:
 		_tint_meshes(_model_root, robot_color)
+	if _eyes_root:
+		_walk_meshes(_eyes_root, func(mi: MeshInstance3D) -> void:
+			var mat := mi.material_override as StandardMaterial3D
+			if mat:
+				mat.albedo_color     = Color(0.85, 0.95, 1.00)
+				mat.emission_enabled = true
+		)
 	_name_label.modulate = Color.WHITE
 	(_hp_bar_fill.material_override as StandardMaterial3D).albedo_color = Color(0.18, 0.88, 0.32)
 	(_hp_bar_bg.material_override   as StandardMaterial3D).albedo_color = Color(0.10, 0.10, 0.10)
