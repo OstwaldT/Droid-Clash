@@ -53,7 +53,10 @@
               v-for="player in gameStore.players"
               :key="player.playerId"
               class="flex items-center gap-3 p-3 border-2"
-              :class="player.isReady ? 'border-[#40c860] bg-[#102116]' : 'border-[#3a3a5c] bg-[#1a1a2e]'"
+              :class="[
+                player.isReady ? 'border-[#40c860] bg-[#102116]' : 'border-[#3a3a5c] bg-[#1a1a2e]',
+                player.playerId === playerStore.playerId ? 'outline outline-1 outline-[#f0c050] outline-offset-[-2px]' : ''
+              ]"
             >
               <span
                 class="ui-status-square"
