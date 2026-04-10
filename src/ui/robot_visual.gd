@@ -248,7 +248,7 @@ func slam_pound() -> void:
 	rt.tween_property(rmat, "albedo_color:a", 0.0, 0.45)
 	get_tree().create_timer(0.75).timeout.connect(ring.queue_free)
 
-## Shockwave: expanding energy pulse ring (no lunge, robot stays put).
+## Shockwave: expanding purple donut that erupts from the caster's feet.
 func pulse_shockwave() -> void:
 	if _is_dead:
 		return
@@ -258,30 +258,31 @@ func pulse_shockwave() -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "position:y", origin_y + 0.15, 0.10)
 	tween.tween_property(self, "position:y", origin_y, 0.15)
-	# Expanding ring
-	var ring := MeshInstance3D.new()
+	# Purple donut — thick ring, ground level, expands to readable size
+	var ring  := MeshInstance3D.new()
 	var rmesh := TorusMesh.new()
-	rmesh.inner_radius = 0.10
-	rmesh.outer_radius = 0.22
-	rmesh.ring_segments = 24
-	rmesh.rings = 3
+	rmesh.inner_radius  = 0.28
+	rmesh.outer_radius  = 0.52
+	rmesh.ring_segments = 32
+	rmesh.rings         = 6
 	ring.mesh = rmesh
 	var rmat := StandardMaterial3D.new()
-	rmat.albedo_color               = Color(0.55, 0.40, 0.90, 0.80)
+	rmat.albedo_color               = Color(0.72, 0.18, 1.0, 0.92)
 	rmat.emission_enabled           = true
-	rmat.emission                   = Color(0.50, 0.30, 0.85)
-	rmat.emission_energy_multiplier = 3.0
+	rmat.emission                   = Color(0.55, 0.05, 0.90)
+	rmat.emission_energy_multiplier = 3.5
 	rmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
 	ring.material_override = rmat
-	ring.position = position + Vector3(0.0, 0.20, 0.0)
+	ring.position  = position + Vector3(0.0, 0.06, 0.0)
 	ring.rotation.x = PI / 2.0
-	ring.scale = Vector3(0.3, 0.3, 0.3)
+	ring.scale = Vector3(0.20, 0.20, 0.20)
 	get_parent().add_child(ring)
 	var rt := ring.create_tween()
 	rt.set_parallel(true)
-	rt.tween_property(ring, "scale", Vector3(5.0, 5.0, 1.0), 0.50)
-	rt.tween_property(rmat, "albedo_color:a", 0.0, 0.55)
-	get_tree().create_timer(0.60).timeout.connect(ring.queue_free)
+	rt.tween_property(ring, "scale",                       Vector3(3.2, 3.2, 0.5), 0.55)
+	rt.tween_property(rmat, "albedo_color:a",              0.0,                    0.60)
+	rt.tween_property(rmat, "emission_energy_multiplier",  0.0,                    0.50)
+	get_tree().create_timer(0.65).timeout.connect(ring.queue_free)
 
 func explode() -> void:
 	if _is_dead:
