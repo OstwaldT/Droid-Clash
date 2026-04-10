@@ -27,7 +27,7 @@ const gameStore = useGameStore()
 const orderedRobots = computed(() => {
   return gameStore.turnOrder
     .map(id => gameStore.robots.find(r => r.playerId === id))
-    .filter(Boolean)
+    .filter(r => r && r.status !== 'dead')
 })
 
 function pillStyle(robot, index) {

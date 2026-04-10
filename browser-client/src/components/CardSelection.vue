@@ -40,7 +40,14 @@
       <!-- Turn order strip -->
       <TurnOrderDisplay class="mb-5" />
 
+      <!-- Defeat overlay -->
+      <div v-if="isDefeated" class="defeat-overlay flex flex-col items-center justify-center py-12 gap-4">
+        <div class="text-[#a84b63] text-lg tracking-widest">DEFEATED</div>
+        <p class="text-[0.55rem] text-[#88889a] text-center leading-[1.9]">Waiting for<br>the round to end</p>
+      </div>
+
       <!-- Loading spinner (before first hand arrives) -->
+      <template v-if="!isDefeated">
       <div v-if="gameStore.availableCards.length === 0 && !gameStore.turnSubmitted"
            class="flex flex-col items-center gap-4 py-10 text-center ui-copy">
         <div class="pixel-loader"></div>
@@ -121,6 +128,7 @@
       </template>
 
       <!-- Pile row — always rendered so refs are stable for animations -->
+      </template> <!-- /v-if="!isDefeated" -->
       <div class="pile-row">
         <div class="pile-stack pile-stack--draw" ref="drawPileRef">
           <span class="pile-count">{{ gameStore.drawCount }}</span>
@@ -146,6 +154,11 @@ import { useCardAnimations } from '@/composables/useCardAnimations'
 const gameStore   = useGameStore()
 const playerStore = usePlayerStore()
 const cardIconKey = getCardIconKey
+
+const isDefeated = computed(() => {
+  const robot = gameStore.robots.find(r => r.playerId === playerStore.playerId)
+  return robot?.status === 'dead'
+})
 
 // DOM refs (passed into the composable)
 const slotRefs       = ref([])
@@ -383,6 +396,14 @@ const submitTurn = () => {
 }
 
 /* Shuffle animation on discard pile */
+@keyframes defeat-flicker {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+.defeat-overlay {
+  animation: defeat-flicker 2.4s ease-in-out infinite;
+}
+
 @keyframes pile-shuffle {
   0%   { transform: rotate(0deg)   scale(1);    }
   15%  { transform: rotate(-12deg) scale(1.15); }
