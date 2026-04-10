@@ -168,8 +168,11 @@ func update_health(hp: int, max_hp: int) -> void:
 		return
 	var ratio: float = clampf(float(hp) / float(max_hp), 0.0, 1.0)
 	var fill_mesh := _hp_bar_fill.mesh as QuadMesh
-	fill_mesh.size = Vector2(HP_BAR_W * ratio, HP_BAR_H)
-	_hp_bar_fill.position.x = HP_BAR_W * (ratio - 1.0) / 2.0
+	fill_mesh.size          = Vector2(HP_BAR_W * ratio, HP_BAR_H)
+	# Shift in mesh-local (billboard-facing) space so the fill left-aligns
+	# with the background regardless of the robot node's rotation.
+	fill_mesh.center_offset = Vector3(HP_BAR_W * (ratio - 1.0) / 2.0, 0.0, 0.0)
+	_hp_bar_fill.position.x = 0.0
 	var fill_mat := _hp_bar_fill.material_override as StandardMaterial3D
 	if ratio > 0.6:
 		fill_mat.albedo_color = Color(0.18, 0.88, 0.32)
