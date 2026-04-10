@@ -160,7 +160,74 @@ func shoot_rocket(target_world_pos: Vector3) -> void:
 		get_tree().create_timer(0.35).timeout.connect(spark.queue_free)
 	rocket.queue_free()
 
-## Sweep: arc-slash forward then snap back. Spawns an emissive arc mesh.
+## Disorient: spinning purple orb flies toward target hex.
+func shoot_disorient(target_world_pos: Vector3) -> void:
+	var proj  := MeshInstance3D.new()
+	var pmesh := TorusMesh.new()
+	pmesh.inner_radius  = 0.05
+	pmesh.outer_radius  = 0.10
+	pmesh.ring_segments = 14
+	pmesh.rings         = 5
+	proj.mesh = pmesh
+	var pmat := StandardMaterial3D.new()
+	pmat.albedo_color               = Color(0.72, 0.18, 1.0, 0.92)
+	pmat.emission_enabled           = true
+	pmat.emission                   = Color(0.50, 0.05, 0.90)
+	pmat.emission_energy_multiplier = 3.5
+	pmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+	proj.material_override = pmat
+	var fwd_dir := Vector3(sin(rotation.y), 0.0, cos(rotation.y))
+	proj.position = position + fwd_dir * 0.55 + Vector3(0.0, 0.20, 0.0)
+	get_parent().add_child(proj)
+	var dest := target_world_pos + Vector3(0.0, 0.20, 0.0)
+	var fly := proj.create_tween()
+	fly.set_parallel(true)
+	fly.set_ease(Tween.EASE_IN)
+	fly.set_trans(Tween.TRANS_QUAD)
+	fly.tween_property(proj, "position",             dest,   0.30)
+	fly.tween_property(proj, "rotation_degrees:y",   1800.0, 0.30)
+	get_tree().create_timer(0.34).timeout.connect(proj.queue_free)
+
+## Disorient hit: dizzy orbiting sparks around the robot's head.
+func disorient_wobble() -> void:
+	if _is_dead:
+		return
+	# Body stutter — quick confused jerk
+	var origin_y := rotation.y
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.tween_property(self, "rotation:y", origin_y + 0.40, 0.08)
+	tween.tween_property(self, "rotation:y", origin_y - 0.40, 0.10)
+	tween.tween_property(self, "rotation:y", origin_y + 0.20, 0.08)
+	tween.tween_property(self, "rotation:y", origin_y,        0.07)
+	# Four dizzy sparks orbiting the head
+	for i in range(4):
+		var star  := MeshInstance3D.new()
+		var smesh := SphereMesh.new()
+		smesh.radius = 0.06
+		smesh.height = 0.12
+		star.mesh = smesh
+		var smat := StandardMaterial3D.new()
+		smat.albedo_color               = Color(0.72, 0.18, 1.0, 0.90)
+		smat.emission_enabled           = true
+		smat.emission                   = Color(0.50, 0.05, 0.90)
+		smat.emission_energy_multiplier = 2.5
+		smat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+		star.material_override = smat
+		var a0    := TAU * float(i) / 4.0
+		var a1    := a0 + PI          # orbit to opposite side
+		var r     := 0.50
+		star.position = position + Vector3(sin(a0) * r, 0.75, cos(a0) * r)
+		get_parent().add_child(star)
+		var dest := position + Vector3(sin(a1) * r, 0.90, cos(a1) * r)
+		var st := star.create_tween()
+		st.set_parallel(true)
+		st.tween_property(star, "position",           dest, 0.50)
+		st.tween_property(smat, "albedo_color:a",     0.0,  0.50)
+		get_tree().create_timer(0.60).timeout.connect(star.queue_free)
+
+
 func sweep_slash() -> void:
 	if _is_dead:
 		return
@@ -204,7 +271,59 @@ func sweep_slash() -> void:
 	at.tween_property(amat, "albedo_color:a", 0.0, 0.35)
 	get_tree().create_timer(0.40).timeout.connect(arc.queue_free)
 
-## Slam: pound the ground. Robot hops up then smashes down with a ring burst.
+## Sweep: fire pillars and ground rings at each of the three arc hex world positions.
+func sweep_arc_fire(arc_world_positions: Array) -> void:
+	for wp: Vector3 in arc_world_positions:
+		# Fire pillar — tall tapered cylinder
+		var col  := MeshInstance3D.new()
+		var cmesh := CylinderMesh.new()
+		cmesh.height        = 1.0
+		cmesh.top_radius    = 0.06
+		cmesh.bottom_radius = 0.24
+		col.mesh = cmesh
+		var cmat := StandardMaterial3D.new()
+		cmat.albedo_color               = Color(1.0, 0.38, 0.05, 0.92)
+		cmat.emission_enabled           = true
+		cmat.emission                   = Color(1.0, 0.22, 0.0)
+		cmat.emission_energy_multiplier = 5.0
+		cmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+		col.material_override = cmat
+		col.position = Vector3(wp.x, 0.50, wp.z)
+		col.scale    = Vector3(0.3, 0.3, 0.3)
+		get_parent().add_child(col)
+		var ct := col.create_tween()
+		ct.set_parallel(true)
+		ct.set_ease(Tween.EASE_OUT)
+		ct.set_trans(Tween.TRANS_QUART)
+		ct.tween_property(col,  "scale",              Vector3(1.8, 1.6, 1.8), 0.22)
+		ct.tween_property(cmat, "albedo_color:a",     0.0,                   0.38)
+		get_tree().create_timer(0.44).timeout.connect(col.queue_free)
+		# Ground burn ring
+		var ring  := MeshInstance3D.new()
+		var rmesh := TorusMesh.new()
+		rmesh.inner_radius  = 0.16
+		rmesh.outer_radius  = 0.34
+		rmesh.ring_segments = 14
+		rmesh.rings         = 4
+		ring.mesh = rmesh
+		var rmat := StandardMaterial3D.new()
+		rmat.albedo_color               = Color(1.0, 0.55, 0.10, 1.0)
+		rmat.emission_enabled           = true
+		rmat.emission                   = Color(1.0, 0.28, 0.0)
+		rmat.emission_energy_multiplier = 4.5
+		rmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+		ring.material_override = rmat
+		ring.position = Vector3(wp.x, 0.06, wp.z)
+		ring.scale    = Vector3(0.25, 0.25, 0.25)
+		get_parent().add_child(ring)
+		var rt := ring.create_tween()
+		rt.set_parallel(true)
+		rt.set_ease(Tween.EASE_OUT)
+		rt.tween_property(ring, "scale",          Vector3(2.2, 2.2, 2.2), 0.32)
+		rt.tween_property(rmat, "albedo_color:a", 0.0,                   0.42)
+		get_tree().create_timer(0.48).timeout.connect(ring.queue_free)
+
+ Robot hops up then smashes down with a ring burst.
 func slam_pound() -> void:
 	if _is_dead:
 		return

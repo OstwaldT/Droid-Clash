@@ -3,7 +3,7 @@ extends Card
 class_name CardShoot
 
 const SHOOT_DAMAGE := 10
-const SHOOT_RANGE  := 4
+const SHOOT_RANGE  := 6
 
 func _init() -> void:
 	type_id     = TYPE_SHOOT

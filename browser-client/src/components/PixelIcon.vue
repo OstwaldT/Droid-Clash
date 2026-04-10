@@ -86,9 +86,25 @@
         <circle cx="12" cy="12" r="2" fill="currentColor" />
       </template>
 
-      <!-- ─── STANDARD ─── -->
-      <template v-else-if="iconName === 'standard'">
-        <path d="M12 2L4 7V16L12 23L20 16V7Z" fill="currentColor" />
+      <!-- ─── DISORIENT ─── -->
+      <template v-else-if="iconName === 'disorient'">
+        <!-- Two curved arrows forming a spin circle, stroke-based -->
+        <path d="M12 4 A8 8 0 0 1 20 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <polygon points="20,8 20,14 16,11" fill="currentColor" />
+        <path d="M12 20 A8 8 0 0 1 4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <polygon points="4,16 4,10 8,13" fill="currentColor" />
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
+      </template>
+
+
+      <!-- ─── SNIPER ─── -->
+      <template v-else-if="iconName === 'sniper'">
+        <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2" />
+        <line x1="12" y1="2" x2="12" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <line x1="12" y1="16" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <line x1="2" y1="12" x2="8" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <line x1="16" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
       </template>
 
       <!-- ─── BRAWLER ─── -->
@@ -96,9 +112,10 @@
         <path d="M7 3H17V7H19V10H17V15H15V20H9V15H7V10H5V7H7V3Z" fill="currentColor" />
       </template>
 
-      <!-- ─── SPEEDSTER ─── -->
-      <template v-else-if="iconName === 'speedster'">
-        <path d="M6 1H16L11 10H20L10 23L13 12H5Z" fill="currentColor" />
+      <!-- ─── SNAKE ─── -->
+      <template v-else-if="iconName === 'snake'">
+        <path d="M6 4 C6 2 18 2 18 7 C18 12 6 12 6 17 C6 22 18 22 18 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+        <polyline points="14,17 18,20 14,23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       </template>
 
       <!-- ─── LOCK ─── -->
@@ -227,11 +244,41 @@
         <path d="M12 2A10 10 0 0 0 2 12" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.30" />
       </template>
 
-      <!-- ─── STANDARD ─── -->
-      <template v-else-if="iconName === 'standard'">
-        <path d="M12 2L4 7V16L12 23L20 16V7Z" :fill="shadowColor" opacity="0.30" transform="translate(1,1)" />
-        <path d="M12 2L4 7V16L12 23L20 16V7Z" fill="currentColor" />
-        <path d="M12 2L6 6V14L12 21V2Z" fill="#ffffff" opacity="0.22" />
+      <!-- ─── DISORIENT ─── -->
+      <template v-else-if="iconName === 'disorient'">
+        <g :stroke="shadowColor" opacity="0.30" transform="translate(1,1)">
+          <path d="M12 4 A8 8 0 0 1 20 12" fill="none" stroke-width="2" stroke-linecap="round" />
+          <polygon points="20,8 20,14 16,11" :fill="shadowColor" stroke="none" />
+          <path d="M12 20 A8 8 0 0 1 4 12" fill="none" stroke-width="2" stroke-linecap="round" />
+          <polygon points="4,16 4,10 8,13" :fill="shadowColor" stroke="none" />
+          <circle cx="12" cy="12" r="2" :fill="shadowColor" stroke="none" />
+        </g>
+        <path d="M12 4 A8 8 0 0 1 20 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <polygon points="20,8 20,14 16,11" fill="currentColor" />
+        <path d="M12 20 A8 8 0 0 1 4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <polygon points="4,16 4,10 8,13" fill="currentColor" />
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
+        <path d="M12 4 A8 8 0 0 1 20 10" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.25" />
+      </template>
+
+
+      <!-- ─── SNIPER ─── -->
+      <template v-else-if="iconName === 'sniper'">
+        <g :stroke="shadowColor" opacity="0.30" transform="translate(1,1)">
+          <circle cx="12" cy="12" r="8" fill="none" stroke-width="2" />
+          <line x1="12" y1="2" x2="12" y2="8" stroke-width="2" />
+          <line x1="12" y1="16" x2="12" y2="22" stroke-width="2" />
+          <line x1="2" y1="12" x2="8" y2="12" stroke-width="2" />
+          <line x1="16" y1="12" x2="22" y2="12" stroke-width="2" />
+          <circle cx="12" cy="12" r="2" :fill="shadowColor" stroke="none" />
+        </g>
+        <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2" />
+        <line x1="12" y1="2" x2="12" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <line x1="12" y1="16" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <line x1="2" y1="12" x2="8" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <line x1="16" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
+        <path d="M6 8 A8 8 0 0 1 12 4" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.30" stroke-linecap="round" />
       </template>
 
       <!-- ─── BRAWLER ─── -->
@@ -244,11 +291,15 @@
         <rect x="13" y="5" width="1" height="9" fill="currentColor" opacity="0.18" />
       </template>
 
-      <!-- ─── SPEEDSTER ─── -->
-      <template v-else-if="iconName === 'speedster'">
-        <path d="M6 1H16L11 10H20L10 23L13 12H5Z" :fill="shadowColor" opacity="0.30" transform="translate(1,1)" />
-        <path d="M6 1H16L11 10H20L10 23L13 12H5Z" fill="currentColor" />
-        <path d="M6 1H12L9 7H5Z" fill="#ffffff" opacity="0.28" />
+      <!-- ─── SNAKE ─── -->
+      <template v-else-if="iconName === 'snake'">
+        <g :stroke="shadowColor" opacity="0.30" transform="translate(1,1)">
+          <path d="M6 4 C6 2 18 2 18 7 C18 12 6 12 6 17 C6 22 18 22 18 20" fill="none" stroke-width="2.5" stroke-linecap="round" />
+          <polyline points="14,17 18,20 14,23" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+        <path d="M6 4 C6 2 18 2 18 7 C18 12 6 12 6 17 C6 22 18 22 18 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+        <polyline points="14,17 18,20 14,23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M6 4 C6 2 14 2 18 6" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.28" stroke-linecap="round" />
       </template>
 
       <!-- ─── LOCK ─── -->
@@ -316,10 +367,10 @@ const CATEGORY_COLORS = {
   // Ranged / utility — violet
   'shoot':         '#a070e0',
   'shockwave':     '#a070e0',
-  // Archetypes — gold (neutral)
-  'standard':      '#f0c050',
+  // Archetypes
   'brawler':       '#e86040',
-  'speedster':     '#50c8f0',
+  'sniper':        '#40c8e0',
+  'snake':         '#70e060',
   // UI elements — muted
   'lock':          '#7b7b93',
   'unlock':        '#7b7b93',

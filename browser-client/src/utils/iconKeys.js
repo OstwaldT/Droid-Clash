@@ -11,6 +11,7 @@ const CARD_ICON_KEYS = {
   10: 'sweep',
   11: 'slam',
   12: 'shockwave',
+  13: 'disorient',
 }
 
 export function getCardIconKey(card) {
@@ -41,6 +42,9 @@ export function getCardIconKey(card) {
   if (name.includes('shockwave')) {
     return 'shockwave'
   }
+  if (name.includes('disorient')) {
+    return 'disorient'
+  }
   if (name.includes('attack')) {
     return 'attack'
   }
@@ -59,11 +63,9 @@ export function getCardIconKey(card) {
 
 export function getArchetypeIconKey(archetypeKey) {
   switch (archetypeKey) {
-    case 'brawler':
-      return 'brawler'
-    case 'speedster':
-      return 'speedster'
-    default:
-      return 'standard'
+    case 'brawler': return 'brawler'
+    case 'sniper':  return 'sniper'
+    case 'snake':   return 'snake'
+    default:        return 'brawler'
   }
 }

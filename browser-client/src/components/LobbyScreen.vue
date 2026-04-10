@@ -160,9 +160,9 @@ function randomRobotName() {
 }
 
 const ARCHETYPES = [
-  { key: 'standard', label: 'Standard', desc: 'Balanced movement and combat' },
-  { key: 'brawler', label: 'Brawler', desc: 'Heavy on close-range attacks' },
-  { key: 'speedster', label: 'Speedster', desc: 'Fast movement, light on attacks' },
+  { key: 'brawler', label: 'Brawler', desc: 'Dominate up close with devastating melee combos' },
+  { key: 'sniper',  label: 'Sniper',  desc: 'Eliminate targets from distance before they can close in' },
+  { key: 'snake',   label: 'Snake',   desc: 'Strike from unexpected angles and vanish before the counter' },
 ]
 
 const archetypeIndex = ref(0)

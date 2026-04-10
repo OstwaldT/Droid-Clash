@@ -5,7 +5,7 @@ class_name Deck
 ## Per-player shuffled deck of cards.
 ## Each card in the deck is identified by a unique instance ID so that
 ## duplicate card types in the same hand can be told apart.
-## Pass a DeckConfig to use a custom composition; defaults to the standard preset.
+## Pass a DeckConfig to use a custom composition; defaults to the brawler preset.
 
 var _config:       DeckConfig
 var _draw_pile:    Array = []   # Array of type_id ints
@@ -16,7 +16,7 @@ var _next_id:      int   = 0    # monotonically increasing instance ID counter
 var _last_shuffle_info: Dictionary = {"shuffled": false, "cards_before_shuffle": 0}
 
 func _init(config = null) -> void:
-	_config = config if config != null else DeckConfig.preset("standard")
+	_config = config if config != null else DeckConfig.preset("brawler")
 	_build_and_shuffle()
 
 ## Build a fresh draw pile from the config's composition and shuffle it.

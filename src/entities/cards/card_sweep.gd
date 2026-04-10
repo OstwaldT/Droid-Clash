@@ -18,6 +18,12 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 		(robot.direction - 1 + 6) % 6,
 	]
 
+	var arc_hexes: Array = []
+	for d in dirs:
+		var hex := grid.get_neighbor_in_direction(robot.position, d)
+		if grid.is_valid(hex):
+			arc_hexes.append(hex)
+
 	var hit_targets: Array = []
 	for d in dirs:
 		var hex := grid.get_neighbor_in_direction(robot.position, d)
@@ -33,17 +39,19 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 
 	if hit_targets.is_empty():
 		return {
-			"type":    type_id,
-			"success": false,
-			"message": "Sweep missed",
-			"damage":  0,
-			"hits":    [],
+			"type":      type_id,
+			"success":   false,
+			"message":   "Sweep missed",
+			"damage":    0,
+			"hits":      [],
+			"arc_hexes": arc_hexes,
 		}
 
 	return {
-		"type":    type_id,
-		"success": true,
-		"message": "Swept %d target(s) for %d damage" % [hit_targets.size(), SWEEP_DAMAGE],
-		"damage":  SWEEP_DAMAGE,
-		"hits":    hit_targets,
+		"type":      type_id,
+		"success":   true,
+		"message":   "Swept %d target(s) for %d damage" % [hit_targets.size(), SWEEP_DAMAGE],
+		"damage":    SWEEP_DAMAGE,
+		"hits":      hit_targets,
+		"arc_hexes": arc_hexes,
 	}

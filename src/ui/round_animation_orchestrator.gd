@@ -10,13 +10,14 @@ class_name RoundAnimationOrchestrator
 ## Usage:
 ##   await orchestrator.play(events)   # returns when all animations are done
 
-const MOVE_STEP      := 0.85
-const TURN_STEP      := 0.45
-const ATTACK_STEP    := 0.90
-const BLOCKED_STEP   := 0.35
-const SWEEP_STEP     := 0.70
-const SLAM_STEP      := 0.80
-const SHOCKWAVE_STEP := 0.65
+const MOVE_STEP        := 0.85
+const TURN_STEP        := 0.45
+const ATTACK_STEP      := 0.90
+const BLOCKED_STEP     := 0.35
+const SWEEP_STEP       := 0.70
+const SLAM_STEP        := 0.80
+const SHOCKWAVE_STEP   := 0.65
+const DISORIENT_STEP   := 1.05
 const FALL_STEP      := RobotVisual.FALL_SLIDE_DURATION + RobotVisual.FALL_DROP_DURATION
 const DROP_STEP      := RobotVisual.FALL_DROP_DURATION
 
@@ -69,6 +70,9 @@ func play(events: Array) -> void:
 
 			Card.TYPE_SHOCKWAVE:
 				await _play_shockwave(visual, event)
+
+			Card.TYPE_DISORIENT:
+				await _play_disorient(visual, event)
 
 	_sync_all_visuals()
 
@@ -207,9 +211,17 @@ func _play_strafe(visual: RobotVisual, event: Dictionary) -> void:
 func _play_sweep(visual: RobotVisual, event: Dictionary) -> void:
 	visual.sweep_slash()
 	var hits: Array = event.get("hits", [])
+	var arc_hexes_raw: Array = event.get("arc_hexes", [])
+	# Brief delay so the lunge lands before fire erupts
+	await get_tree().create_timer(0.09).timeout
+	if arc_hexes_raw.size() > 0:
+		var arc_world: Array = []
+		for h in arc_hexes_raw:
+			arc_world.append(_renderer.hex_to_world(int(h.x), int(h.y)))
+		visual.sweep_arc_fire(arc_world)
 	for hit in hits:
 		_apply_hit(hit)
-	await get_tree().create_timer(SWEEP_STEP).timeout
+	await get_tree().create_timer(SWEEP_STEP - 0.09).timeout
 
 func _play_slam(visual: RobotVisual, event: Dictionary) -> void:
 	visual.slam_pound()
@@ -269,6 +281,24 @@ func _apply_hit(hit: Dictionary) -> void:
 	else:
 		target_visual.flash_hit()
 		target_visual.update_health(target_health, target_max_hp)
+
+## Disorient: projectile flies toward target hex; hit robot wobbles and turns.
+func _play_disorient(visual: RobotVisual, event: Dictionary) -> void:
+	var success: bool = event.get("success", false)
+	var hit_pos_raw: Variant = event.get("hit_pos", {"x": 0, "y": 0})
+	var hit_pos := Vector2i(int(hit_pos_raw.x), int(hit_pos_raw.y))
+	var dest := _renderer.hex_to_robot_pos(hit_pos.x, hit_pos.y)
+	visual.shoot_disorient(dest)
+	await get_tree().create_timer(0.32).timeout
+	if success:
+		var target_id: int = event.get("target", -1)
+		var target_vis: RobotVisual = _visuals.get(target_id)
+		if target_vis:
+			target_vis.disorient_wobble()
+			await get_tree().create_timer(0.30).timeout
+			var new_dir: int = event.get("new_direction", 0)
+			target_vis.set_robot_direction(new_dir, true)
+	await get_tree().create_timer(DISORIENT_STEP - 0.62).timeout
 
 ## Snap all visuals to the authoritative post-round robot state.
 func _sync_all_visuals() -> void:

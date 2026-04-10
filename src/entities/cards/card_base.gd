@@ -18,6 +18,7 @@ const TYPE_STRAFE_RIGHT := 9
 const TYPE_SWEEP      := 10
 const TYPE_SLAM       := 11
 const TYPE_SHOCKWAVE  := 12
+const TYPE_DISORIENT  := 13
 
 var type_id:     int    = 0
 var card_name:   String = ""

@@ -21,5 +21,6 @@ static func create(type_id: int) -> Card:
 		Card.TYPE_SWEEP:         return CardSweep.new()
 		Card.TYPE_SLAM:          return CardSlam.new()
 		Card.TYPE_SHOCKWAVE:     return CardShockwave.new()
+		Card.TYPE_DISORIENT:     return CardDisorient.new()
 	push_error("CardRegistry.create: unknown type_id %d" % type_id)
 	return null

@@ -189,7 +189,7 @@ func reset_for_rematch() -> void:
 		var pdata: Dictionary = players[player_id]
 		robots[player_id] = Robot.new(player_id, pdata["name"], start_pos, pdata["color"])
 		robots[player_id].direction = randi() % 6
-		var arch: String = pdata.get("archetype", "standard")
+		var arch: String = pdata.get("archetype", "brawler")
 		player_decks[player_id] = Deck.new(DeckConfig.preset(arch))
 		players[player_id]["submitted"] = false
 		players[player_id]["submitted_instance_ids"] = []
