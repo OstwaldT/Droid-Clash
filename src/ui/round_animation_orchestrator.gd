@@ -238,7 +238,11 @@ func _play_shockwave(visual: RobotVisual, event: Dictionary) -> void:
 			target_visual.fall_off(edge_world)
 			any_fell = true
 		elif push.get("blocked", false):
-			target_visual.bump_blocked()
+			var wall_hex  = push.get("wall_hex", {"x": 0, "y": 0})
+			var wall_world := _renderer.hex_to_world(wall_hex.x, wall_hex.y)
+			wall_world.y = target_visual.position.y
+			target_visual.wall_slam(wall_world)
+			_apply_hit(push)
 		else:
 			var pushed_to: Vector2i = push.get("pushed_to", Vector2i.ZERO)
 			target_visual.move_to(_renderer.hex_to_robot_pos(pushed_to.x, pushed_to.y))

@@ -6,7 +6,7 @@ func _init() -> void:
 	type_id     = TYPE_SHOCKWAVE
 	card_name   = "Shockwave"
 	icon        = "◎"
-	description = "Push all adjacent robots 1 hex outward. No damage."
+	description = "Push all adjacent robots 1 hex outward. Robots slammed into walls take damage."
 
 func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 	var pushed_targets: Array = []
@@ -32,19 +32,25 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 					})
 					continue
 
-				# Wall or occupied → target stays put (no slam damage)
+				# Wall or occupied → slam damage if wall, no movement
 				var blocked := not grid.is_walkable(push_to)
+				var wall_hit := blocked
 				if not blocked:
 					for other in all_robots.values():
 						if other != robot and other != r and other.is_alive() and other.position == push_to:
 							blocked = true
 							break
 				if blocked:
+					if wall_hit:
+						r.take_damage(Robot.SLAM_DAMAGE)
 					pushed_targets.append({
 						"target":      r.player_id,
 						"pushed_from": pushed_from,
 						"pushed_to":   pushed_from,
+						"wall_hex":    push_to,
 						"blocked":     true,
+						"wall_hit":    wall_hit,
+						"slam_damage": Robot.SLAM_DAMAGE if wall_hit else 0,
 						"target_health":     r.health,
 						"target_max_health": r.max_health,
 					})

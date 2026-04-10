@@ -17,6 +17,27 @@ func bump_blocked() -> void:
 	tween.tween_property(self, "position", fwd, 0.12)
 	tween.tween_property(self, "position", position, 0.18)
 
+## Slam into a wall during a shockwave push: nudge toward the wall then shake.
+func wall_slam(wall_world: Vector3) -> void:
+	if _is_dead:
+		return
+	var origin := position
+	var dir    := (wall_world - origin)
+	dir.y = 0.0
+	dir    = dir.normalized() if dir.length_squared() > 0.001 else Vector3(sin(rotation.y), 0.0, cos(rotation.y))
+	var perp   := Vector3(-dir.z, 0.0, dir.x)
+	var tween  := create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_QUART)
+	tween.tween_property(self, "position", origin + dir * 0.30, 0.11)
+	tween.tween_property(self, "position", origin,              0.09)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.tween_property(self, "position", origin + perp * 0.09, 0.06)
+	tween.tween_property(self, "position", origin - perp * 0.09, 0.08)
+	tween.tween_property(self, "position", origin + perp * 0.04, 0.06)
+	tween.tween_property(self, "position", origin,               0.07)
+
 func strike_forward() -> void:
 	if _is_dead:
 		return
