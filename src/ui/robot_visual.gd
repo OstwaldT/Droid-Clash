@@ -38,7 +38,35 @@ func wall_slam(wall_world: Vector3) -> void:
 	tween.tween_property(self, "position", origin + perp * 0.04, 0.06)
 	tween.tween_property(self, "position", origin,               0.07)
 
-func strike_forward() -> void:
+## Red fire donut spawned on a target that is slammed into a wall.
+## Centred on this robot's current position; expands and fades out.
+func fire_ring() -> void:
+	var ring  := MeshInstance3D.new()
+	var rmesh := TorusMesh.new()
+	rmesh.inner_radius  = 0.18
+	rmesh.outer_radius  = 0.36
+	rmesh.ring_segments = 20
+	rmesh.rings         = 4
+	ring.mesh = rmesh
+	var rmat := StandardMaterial3D.new()
+	rmat.albedo_color               = Color(1.0, 0.18, 0.05, 0.95)
+	rmat.emission_enabled           = true
+	rmat.emission                   = Color(1.0, 0.10, 0.0)
+	rmat.emission_energy_multiplier = 3.0
+	rmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring.material_override = rmat
+	ring.position  = position + Vector3(0.0, 0.08, 0.0)
+	ring.rotation.x = PI / 2.0
+	ring.scale = Vector3(0.25, 0.25, 0.25)
+	get_parent().add_child(ring)
+	var rt := ring.create_tween()
+	rt.set_parallel(true)
+	rt.tween_property(ring, "scale",             Vector3(2.8, 2.8, 0.6), 0.38)
+	rt.tween_property(rmat, "albedo_color:a",    0.0,                    0.42)
+	rt.tween_property(rmat, "emission_energy_multiplier", 0.0,           0.38)
+	get_tree().create_timer(0.50).timeout.connect(ring.queue_free)
+
+
 	if _is_dead:
 		return
 	var origin := position

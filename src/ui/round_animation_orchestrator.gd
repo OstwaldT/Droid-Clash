@@ -242,6 +242,8 @@ func _play_shockwave(visual: RobotVisual, event: Dictionary) -> void:
 			var wall_world := _renderer.hex_to_world(wall_hex.x, wall_hex.y)
 			wall_world.y = target_visual.position.y
 			target_visual.wall_slam(wall_world)
+			if push.get("wall_hit", false):
+				target_visual.fire_ring()
 			_apply_hit(push)
 		else:
 			var pushed_to: Vector2i = push.get("pushed_to", Vector2i.ZERO)
