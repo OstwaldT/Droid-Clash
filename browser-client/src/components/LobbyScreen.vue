@@ -49,13 +49,6 @@
       </div>
 
       <div v-else class="space-y-6">
-        <div class="text-center">
-          <p class="text-[#40c860] mb-3 text-[0.65rem]">Connected</p>
-          <p class="text-[0.68rem] leading-[1.8]">
-            Welcome, <span class="text-[#f0c050]">{{ playerStore.playerName }}</span>
-          </p>
-        </div>
-
         <div class="ui-section p-4">
           <h2 class="text-[0.65rem] text-[#f0c050] mb-3 uppercase">Players</h2>
           <div class="space-y-2">
@@ -82,7 +75,6 @@
 
         <!-- Deck archetype selector -->
         <div class="ui-section p-4">
-          <h2 class="text-[0.65rem] text-[#f0c050] mb-3 uppercase">Deck Archetype</h2>
           <div class="flex items-center gap-3">
             <button
               @click="prevArchetype"
