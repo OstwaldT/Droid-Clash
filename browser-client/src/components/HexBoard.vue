@@ -1,13 +1,13 @@
 <template>
-  <div class="hex-board flex flex-col items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-4xl">
-      <h1 class="text-3xl font-bold text-center mb-2">Hexagonal Grid</h1>
-      <p class="text-center text-gray-600 mb-6">Turn {{ gameStore.turnNumber }}</p>
+  <div class="hex-board ui-screen flex flex-col items-center justify-center p-4">
+    <div class="ui-panel p-8 w-full max-w-4xl">
+      <h1 class="text-xl text-center mb-3 text-[#f0c050]">Battle Grid</h1>
+      <p class="text-center ui-copy mb-6 text-[0.58rem]">Turn {{ gameStore.turnNumber }}</p>
 
       <svg
         :width="canvasWidth"
         :height="canvasHeight"
-        class="border-2 border-gray-300 rounded-lg mx-auto mb-6 bg-gray-50"
+        class="border-2 border-[#3a3a5c] mx-auto mb-6 bg-[#10101b]"
       >
         <!-- Grid hexagons -->
         <g v-for="(hex, index) in hexagons" :key="`hex-${index}`">
@@ -47,15 +47,15 @@
           v-for="robot in gameStore.robots"
           :key="`status-${robot.playerId}`"
           :class="[
-            'p-4 rounded-lg border-2',
+            'p-4 border-2',
             robot.status === 'alive'
-              ? 'border-green-400 bg-green-50'
-              : 'border-red-400 bg-red-50'
+              ? 'border-[#40c860] bg-[#102116]'
+              : 'border-[#a84b63] bg-[#24131a]'
           ]"
         >
-          <div class="font-bold">{{ robot.name || `Player ${robot.playerId}` }}</div>
-          <div class="text-sm text-gray-600">Health: {{ robot.health }} / {{ robot.maxHealth || 100 }}</div>
-          <div class="text-sm text-gray-600">Status: {{ robot.status }}</div>
+          <div class="text-[0.6rem] text-[#f8f8ff] leading-[1.7]">{{ robot.name || `Player ${robot.playerId}` }}</div>
+          <div class="text-[0.56rem] text-[#b7b7ca] leading-[1.7]">Health: {{ robot.health }} / {{ robot.maxHealth || 100 }}</div>
+          <div class="text-[0.56rem] text-[#b7b7ca] leading-[1.7]">Status: {{ robot.status }}</div>
         </div>
       </div>
     </div>
@@ -107,7 +107,4 @@ const hexPoints = (q, r) => {
 </script>
 
 <style scoped>
-.hex-board {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
 </style>

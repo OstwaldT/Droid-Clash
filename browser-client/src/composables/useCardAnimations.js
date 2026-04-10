@@ -1,5 +1,6 @@
 import { ref, nextTick } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import { getCardIconKey } from '@/utils/iconKeys'
 
 /**
  * Manages all card animation state and logic for CardSelection.
@@ -51,8 +52,8 @@ export function useCardAnimations({ slotRefs, cardRefs, drawPileRef, discardPile
       if (!slotEl) continue
       const rect = slotEl.getBoundingClientRect()
       ghosts.push({
-        id:   `discard-slot-${Date.now()}-${i}`,
-        icon: selectedCards[i].icon,
+        id: `discard-slot-${Date.now()}-${i}`,
+        iconKey: getCardIconKey(selectedCards[i]),
         w: rect.width, h: rect.height,
         left: rect.left + rect.width  / 2 - rect.width  / 2,
         top:  rect.top  + rect.height / 2 - rect.height / 2,
@@ -68,8 +69,8 @@ export function useCardAnimations({ slotRefs, cardRefs, drawPileRef, discardPile
       if (!cardEl) continue
       const rect = cardEl.getBoundingClientRect()
       ghosts.push({
-        id:   `discard-hand-${Date.now()}-${i}`,
-        icon: handCards[i].icon,
+        id: `discard-hand-${Date.now()}-${i}`,
+        iconKey: getCardIconKey(handCards[i]),
         w: rect.width, h: rect.height,
         left: rect.left,
         top:  rect.top,
@@ -115,15 +116,15 @@ export function useCardAnimations({ slotRefs, cardRefs, drawPileRef, discardPile
       const cardRect = el.getBoundingClientRect()
       const w = cardRect.width, h = cardRect.height
       ghosts.push({
-        id:       `deal-${Date.now()}-${startIndex + i}`,
-        icon:     cards[i].icon,
-        cardId:   cards[i].id,
+        id: `deal-${Date.now()}-${startIndex + i}`,
+        iconKey: getCardIconKey(cards[i]),
+        cardId: cards[i].id,
         w, h,
-        left:     drawCx - w / 2,
-        top:      drawCy - h / 2,
+        left: drawCx - w / 2,
+        top: drawCy - h / 2,
         tx: 0, ty: 0,
         destLeft: cardRect.left,
-        destTop:  cardRect.top,
+        destTop: cardRect.top,
       })
     }
     if (!ghosts.length) return
@@ -184,7 +185,7 @@ export function useCardAnimations({ slotRefs, cardRefs, drawPileRef, discardPile
     const to   = slotEl.getBoundingClientRect()
 
     flyCard.value = {
-      icon: card.icon,
+      iconKey: getCardIconKey(card),
       left: from.left + from.width  / 2 - 32,
       top:  from.top  + from.height / 2 - 32,
       tx: 0,

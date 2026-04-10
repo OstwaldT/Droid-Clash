@@ -3,12 +3,12 @@
     <div
       v-for="robot in gameStore.robots"
       :key="robot.playerId"
-      class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold shadow transition-all duration-300"
+      class="flex items-center gap-2 px-3 py-1.5 text-sm transition-all duration-300 border"
       :style="pillStyle(robot)"
     >
       <!-- Color dot -->
       <span
-        class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+        class="inline-block w-2.5 h-2.5 flex-shrink-0"
         :style="{ backgroundColor: robot.color || '#888' }"
       ></span>
 
@@ -35,9 +35,9 @@ function getStatus(playerId) {
 
 function statusIcon(playerId) {
   const s = getStatus(playerId)
-  if (s === 'submitted') return '✓'
-  if (s === 'acting')    return '⚡'
-  return '…'
+  if (s === 'submitted') return 'OK'
+  if (s === 'acting')    return 'GO'
+  return '...'
 }
 
 function statusLabel(playerId) {

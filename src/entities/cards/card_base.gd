@@ -13,6 +13,11 @@ const TYPE_ATTACK     := 4
 const TYPE_SPRINT     := 5
 const TYPE_SHOOT      := 6
 const TYPE_180        := 7
+const TYPE_STRAFE_LEFT  := 8
+const TYPE_STRAFE_RIGHT := 9
+const TYPE_SWEEP      := 10
+const TYPE_SLAM       := 11
+const TYPE_SHOCKWAVE  := 12
 
 var type_id:     int    = 0
 var card_name:   String = ""

@@ -1,24 +1,23 @@
 <template>
-  <div v-if="orderedRobots.length > 0" class="turn-order flex justify-center items-center gap-1.5 px-3 py-2 rounded-lg">
+  <div v-if="orderedRobots.length > 0" class="turn-order flex justify-center items-center gap-1.5 px-3 py-2">
     <template v-for="(robot, index) in orderedRobots" :key="robot.playerId">
       <!-- Arrow between entries -->
-      <span v-if="index > 0" class="text-gray-500 text-xs select-none">›</span>
+      <span v-if="index > 0" class="text-[#6f6f87] text-xs select-none">&gt;</span>
 
       <!-- Player pill -->
       <span
-        class="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300"
-        :class="robot.playerId === playerStore.playerId ? 'ring-2 ring-offset-1 ring-offset-transparent' : ''"
+        class="turn-pill flex items-center gap-1 px-2 py-1 text-xs whitespace-nowrap transition-all duration-300"
         :style="pillStyle(robot, index)"
       >
         <!-- Position badge -->
         <span
-          class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none"
+          class="inline-flex items-center justify-center w-4 h-4 text-[10px] leading-none border border-current"
           :style="{ backgroundColor: robot.color + '44', color: robot.color }"
         >{{ index + 1 }}</span>
 
         <!-- Color dot -->
         <span
-          class="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
+          class="inline-block w-1.5 h-1.5 flex-shrink-0"
           :style="{ backgroundColor: robot.color }"
         ></span>
 
@@ -48,19 +47,22 @@ const orderedRobots = computed(() => {
 
 function pillStyle(robot, index) {
   const isFirst = index === 0
-  const isMe = robot.playerId === playerStore.playerId
   const color = robot.color || '#888'
   return {
     backgroundColor: isFirst ? color + '33' : color + '18',
     border: `1px solid ${color}${isFirst ? 'aa' : '44'}`,
     color: '#f1f5f9',
-    ...(isMe ? { ringColor: color } : {}),
   }
 }
 </script>
 
 <style scoped>
 .turn-order {
-  background: rgba(0, 0, 0, 0.15);
+  background: #141425;
+  border: 2px solid #3a3a5c;
+}
+
+.turn-pill {
+  border-radius: 0;
 }
 </style>

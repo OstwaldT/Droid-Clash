@@ -11,7 +11,9 @@
         transform: `translate(${flyCard.tx}px, ${flyCard.ty}px)`,
         borderColor: playerStore.playerColor,
       }"
-    >{{ flyCard.icon }}</div>
+    >
+      <PixelIcon :name="flyCard.iconKey" :size="36" />
+    </div>
     <!-- Batch deal / discard ghosts -->
     <div
       v-for="ghost in flyCards"
@@ -25,12 +27,14 @@
         transform: `translate(${ghost.tx}px, ${ghost.ty}px)`,
         borderColor: playerStore.playerColor,
       }"
-    >{{ ghost.icon }}</div>
+    >
+      <PixelIcon :name="ghost.iconKey" :size="28" />
+    </div>
   </Teleport>
 
-  <div class="card-selection flex flex-col items-center justify-center min-h-screen p-4">
+  <div class="card-selection ui-screen flex flex-col items-center justify-center p-4">
     <div
-      class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md"
+      class="ui-panel p-6 w-full max-w-md"
       :style="{ border: `3px solid ${playerStore.playerColor}` }"
     >
       <!-- Turn order strip -->
@@ -38,9 +42,9 @@
 
       <!-- Loading spinner (before first hand arrives) -->
       <div v-if="gameStore.availableCards.length === 0 && !gameStore.turnSubmitted"
-           class="flex flex-col items-center gap-3 py-10 text-gray-400">
-        <span class="text-4xl animate-spin">⏳</span>
-        <span class="text-sm">Receiving new hand…</span>
+           class="flex flex-col items-center gap-4 py-10 text-center ui-copy">
+        <div class="pixel-loader"></div>
+        <span class="text-[0.65rem]">Receiving new hand...</span>
       </div>
 
       <template v-else>
@@ -58,8 +62,8 @@
             @click="!gameStore.turnSubmitted && gameStore.selectedCards[i] && deselectSlot(i)"
           >
             <transition name="pop">
-              <span v-if="gameStore.selectedCards[i] && !isFlying(gameStore.selectedCards[i]?.id)" class="text-4xl select-none">
-                {{ gameStore.selectedCards[i].icon }}
+              <span v-if="gameStore.selectedCards[i] && !isFlying(gameStore.selectedCards[i]?.id)" class="slot-icon">
+                <PixelIcon :name="cardIconKey(gameStore.selectedCards[i])" :size="32" />
               </span>
             </transition>
           </div>
@@ -76,7 +80,10 @@
             :disabled="!gameStore.canSubmitTurn || gameStore.turnSubmitted"
             @click="submitTurn"
           >
-            <span class="text-4xl select-none">{{ gameStore.turnSubmitted || !gameStore.canSubmitTurn ? '🔒' : '🔓' }}</span>
+            <PixelIcon
+              :name="gameStore.turnSubmitted || !gameStore.canSubmitTurn ? 'lock' : 'unlock'"
+              :size="30"
+            />
           </button>
         </div>
 
@@ -99,14 +106,16 @@
               }"
               @click="onCardClick(card, idx)"
             >
-              <span class="text-3xl select-none leading-none">{{ card.icon }}</span>
+              <span class="card-icon">
+                <PixelIcon :name="cardIconKey(card)" :size="30" />
+              </span>
               <span class="card-name">{{ card.name }}</span>
             </button>
           </div>
 
           <!-- Waiting overlay: spinning hourglass centred over the greyed-out hand -->
           <div v-if="gameStore.turnSubmitted" class="hand-overlay">
-            <span class="spin-slow" style="display:inline-block; font-size:3rem">⏳</span>
+            <div class="pixel-loader"></div>
           </div>
         </div>
       </template>
@@ -128,12 +137,15 @@
 import { ref, nextTick, watch } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { usePlayerStore } from '@/stores/playerStore'
-import websocket from '@/api/websocket'
 import TurnOrderDisplay from '@/components/TurnOrderDisplay.vue'
+import PixelIcon from '@/components/PixelIcon.vue'
+import websocket from '@/api/websocket'
+import { getCardIconKey } from '@/utils/iconKeys'
 import { useCardAnimations } from '@/composables/useCardAnimations'
 
 const gameStore   = useGameStore()
 const playerStore = usePlayerStore()
+const cardIconKey = getCardIconKey
 
 // DOM refs (passed into the composable)
 const slotRefs       = ref([])
@@ -217,27 +229,34 @@ const submitTurn = () => {
 </script>
 
 <style scoped>
-.card-selection {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
 .slot {
   width: 72px;
   height: 72px;
-  border-radius: 12px;
+  border-radius: 0;
   border: 2px solid;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  background: #121221;
+  color: #f0c050;
+  transition:
+    background-color 0.2s,
+    transform 0.15s ease;
 }
 .slot--empty {
   border-style: dashed;
-  border-color: #d1d5db;
+  border-color: #515170;
   background: transparent;
 }
 .slot--filled {
   border-style: solid;
+}
+
+.slot-icon,
+.card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hand-grid {
@@ -257,14 +276,7 @@ const submitTurn = () => {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-.spin-slow {
-  animation: spin-slow 2.8s linear infinite;
+  background: rgba(15, 15, 24, 0.55);
 }
 
 .hand-card {
@@ -274,9 +286,10 @@ const submitTurn = () => {
   justify-content: center;
   gap: 4px;
   padding: 8px 6px 6px;
-  border-radius: 12px;
-  border: 2px solid #e5e7eb;
-  background: #f9fafb;
+  border-radius: 0;
+  border: 2px solid #3a3a5c;
+  background: #141425;
+  color: #f0c050;
   transition: transform 0.15s, opacity 0.2s;
   cursor: pointer;
   height: 80px;
@@ -285,12 +298,13 @@ const submitTurn = () => {
 .card-name {
   font-size: 0.62rem;
   font-weight: 600;
-  color: #374151;
+  color: #d8d8e8;
   text-align: center;
-  line-height: 1.1;
+  line-height: 1.5;
   white-space: normal;
   word-break: break-word;
   max-width: 100%;
+  text-transform: uppercase;
 }
 
 /* Pile row */
@@ -305,8 +319,8 @@ const submitTurn = () => {
 .pile-stack {
   width: 40px;
   height: 54px;
-  border-radius: 6px;
-  border: 2px solid #4b5563;
+  border-radius: 0;
+  border: 2px solid #3a3a5c;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -319,8 +333,8 @@ const submitTurn = () => {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 5px;
-  border: 2px solid #4b5563;
+  border-radius: 0;
+  border: 2px solid #3a3a5c;
   transform: translate(-3px, 3px);
   z-index: -1;
 }
@@ -328,23 +342,23 @@ const submitTurn = () => {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 5px;
-  border: 2px solid #4b5563;
+  border-radius: 0;
+  border: 2px solid #3a3a5c;
   transform: translate(-6px, 6px);
   z-index: -2;
 }
 
-.pile-stack--draw    { background: #1e293b; }
-.pile-stack--discard { background: #374151; }
+.pile-stack--draw    { background: #1f2333; }
+.pile-stack--discard { background: #3a3a5c; }
 .pile-stack--draw::before,
-.pile-stack--draw::after    { background: #1e293b; }
+.pile-stack--draw::after    { background: #1f2333; }
 .pile-stack--discard::before,
-.pile-stack--discard::after { background: #374151; }
+.pile-stack--discard::after { background: #3a3a5c; }
 
 .pile-count {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #f9fafb;
+  color: #f8f8ff;
   position: relative;
   z-index: 1;
 }
@@ -352,21 +366,19 @@ const submitTurn = () => {
 /* Flying ghosts */
 .fly-card {
   position: fixed;
-  font-size: 2.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
+  background: #141425;
+  color: #f0c050;
   border: 2px solid;
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   pointer-events: none;
   z-index: 9999;
   transition: transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
-
 .fly-card--batch {
-  font-size: 1.8rem;
   transition: transform 0.30s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

@@ -2,10 +2,152 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  background-color: #0f0f18;
+  color: #e8e8f0;
+  color-scheme: dark;
+}
+
+html,
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+body {
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  background: #0f0f18;
+  color: #e8e8f0;
   min-height: 100vh;
   margin: 0;
   padding: 0;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+input::placeholder {
+  color: #7b7b93;
+  opacity: 1;
+}
+
+.ui-screen {
+  min-height: 100vh;
+  background: #0f0f18;
+  color: #e8e8f0;
+}
+
+.ui-panel {
+  background: #1a1a2e;
+  border: 2px solid #3a3a5c;
+  box-shadow: 8px 8px 0 #080810;
+  border-radius: 0;
+}
+
+.ui-section {
+  background: #141425;
+  border: 2px solid #3a3a5c;
+  border-radius: 0;
+}
+
+.ui-section--danger {
+  border-color: #a84b63;
+}
+
+.ui-button {
+  border: 2px solid #3a3a5c;
+  border-radius: 0;
+  background: #23233a;
+  color: #e8e8f0;
+  text-transform: uppercase;
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.ui-button:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+}
+
+.ui-button:active:not(:disabled) {
+  transform: translate(1px, 1px);
+}
+
+.ui-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.ui-button--accent {
+  background: #f0c050;
+  border-color: #f0c050;
+  color: #0f0f18;
+}
+
+.ui-button--success {
+  background: #40c860;
+  border-color: #40c860;
+  color: #0f0f18;
+}
+
+.ui-button--muted {
+  background: #23233a;
+  border-color: #3a3a5c;
+  color: #c8c8d8;
+}
+
+.ui-input {
+  border: 2px solid #3a3a5c;
+  border-radius: 0;
+  background: #10101b;
+  color: #e8e8f0;
+}
+
+.ui-input:focus {
+  outline: none;
+  border-color: #f0c050;
+}
+
+.ui-copy {
+  color: #b7b7ca;
+  line-height: 1.8;
+}
+
+.ui-status-square {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.pixel-loader {
+  width: 28px;
+  height: 28px;
+  border: 4px solid #3a3a5c;
+  border-top-color: #f0c050;
+  animation: pixel-spin 0.8s steps(8) infinite;
+}
+
+@keyframes pixel-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }

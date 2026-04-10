@@ -14,7 +14,8 @@ const MOVE_STEP    := 0.85
 const TURN_STEP    := 0.45
 const ATTACK_STEP  := 0.90
 const BLOCKED_STEP := 0.35
-const FALL_STEP    := 1.10
+const FALL_STEP    := RobotVisual.FALL_SLIDE_DURATION + RobotVisual.FALL_DROP_DURATION
+const DROP_STEP    := RobotVisual.FALL_DROP_DURATION
 
 var _renderer: HexGridRenderer
 var _visuals: Dictionary   # player_id -> RobotVisual  (live ref from GameBoard3D)
@@ -114,8 +115,8 @@ func _play_rush(visual: RobotVisual, event: Dictionary) -> void:
 		edge_world.y = HexGridRenderer.HEX_HEIGHT
 		visual.move_to(edge_world, true, 1.10)
 		await get_tree().create_timer(1.10).timeout
-		visual.fall_off(edge_world)
-		await get_tree().create_timer(FALL_STEP).timeout
+		visual.fall_off(edge_world, false)
+		await get_tree().create_timer(DROP_STEP).timeout
 	else:
 		if s0.get("fell", false):
 			var fell_to: Vector2i = s0.get("fell_to", Vector2i.ZERO)

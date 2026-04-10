@@ -5,6 +5,9 @@ class_name RobotVisual
 ## One-shot animation effects triggered by RoundAnimationOrchestrator.
 ## State sync and build logic live in RobotVisualBase.
 
+const FALL_SLIDE_DURATION: float = RobotVisualBase.MOVE_DURATION
+const FALL_DROP_DURATION: float = 0.70
+
 func bump_blocked() -> void:
 	if _is_dead:
 		return
@@ -43,21 +46,22 @@ func flash_hit() -> void:
 			tween.tween_property(mat, "albedo_color", orig, 0.40)
 	)
 
-func fall_off(edge_pos: Vector3) -> void:
+func fall_off(edge_pos: Vector3, slide_to_edge: bool = true) -> void:
 	if _is_dead:
 		return
 	_is_dead = true
-	var slide := create_tween()
-	slide.set_ease(Tween.EASE_IN)
-	slide.set_trans(Tween.TRANS_QUAD)
-	slide.tween_property(self, "position", edge_pos, 0.30)
-	await slide.finished
+	if slide_to_edge and not position.is_equal_approx(edge_pos):
+		var slide := create_tween()
+		slide.set_ease(Tween.EASE_IN_OUT)
+		slide.set_trans(Tween.TRANS_CUBIC)
+		slide.tween_property(self, "position", edge_pos, FALL_SLIDE_DURATION)
+		await slide.finished
 	var fall := create_tween()
 	fall.set_parallel(true)
 	fall.set_ease(Tween.EASE_IN)
 	fall.set_trans(Tween.TRANS_QUAD)
-	fall.tween_property(self, "position:y", position.y - 6.0, 0.70)
-	fall.tween_property(self, "rotation:y",  rotation.y + TAU * 1.5, 0.70)
+	fall.tween_property(self, "position:y", position.y - 6.0, FALL_DROP_DURATION)
+	fall.tween_property(self, "rotation:y",  rotation.y + TAU * 1.5, FALL_DROP_DURATION)
 	fall.tween_property(self, "scale", Vector3(0.1, 0.1, 0.1), 0.65)
 	await fall.finished
 	visible = false
