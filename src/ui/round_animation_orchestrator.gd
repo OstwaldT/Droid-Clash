@@ -10,12 +10,15 @@ class_name RoundAnimationOrchestrator
 ## Usage:
 ##   await orchestrator.play(events)   # returns when all animations are done
 
-const MOVE_STEP    := 0.85
-const TURN_STEP    := 0.45
-const ATTACK_STEP  := 0.90
-const BLOCKED_STEP := 0.35
-const FALL_STEP    := RobotVisual.FALL_SLIDE_DURATION + RobotVisual.FALL_DROP_DURATION
-const DROP_STEP    := RobotVisual.FALL_DROP_DURATION
+const MOVE_STEP      := 0.85
+const TURN_STEP      := 0.45
+const ATTACK_STEP    := 0.90
+const BLOCKED_STEP   := 0.35
+const SWEEP_STEP     := 0.70
+const SLAM_STEP      := 0.80
+const SHOCKWAVE_STEP := 0.65
+const FALL_STEP      := RobotVisual.FALL_SLIDE_DURATION + RobotVisual.FALL_DROP_DURATION
+const DROP_STEP      := RobotVisual.FALL_DROP_DURATION
 
 var _renderer: HexGridRenderer
 var _visuals: Dictionary   # player_id -> RobotVisual  (live ref from GameBoard3D)
@@ -53,6 +56,19 @@ func play(events: Array) -> void:
 
 			Card.TYPE_SHOOT:
 				await _play_shoot(visual, event)
+
+			Card.TYPE_STRAFE_LEFT, \
+			Card.TYPE_STRAFE_RIGHT:
+				await _play_strafe(visual, event)
+
+			Card.TYPE_SWEEP:
+				await _play_sweep(visual, event)
+
+			Card.TYPE_SLAM:
+				await _play_slam(visual, event)
+
+			Card.TYPE_SHOCKWAVE:
+				await _play_shockwave(visual, event)
 
 	_sync_all_visuals()
 
@@ -172,6 +188,81 @@ func _play_shoot(visual: RobotVisual, event: Dictionary) -> void:
 				target_visual.flash_hit()
 				target_visual.update_health(target_health, target_max_hp)
 	await get_tree().create_timer(0.50).timeout
+
+func _play_strafe(visual: RobotVisual, event: Dictionary) -> void:
+	if event.get("fell", false):
+		var fell_to: Vector2i = event.get("fell_to", Vector2i.ZERO)
+		var edge_world := _renderer.hex_to_world(fell_to.x, fell_to.y)
+		edge_world.y = HexGridRenderer.HEX_HEIGHT
+		visual.fall_off(edge_world)
+		await get_tree().create_timer(FALL_STEP).timeout
+	elif event.get("success", false):
+		var to: Vector2i = event.get("to", Vector2i.ZERO)
+		visual.move_to(_renderer.hex_to_robot_pos(to.x, to.y))
+		await get_tree().create_timer(MOVE_STEP).timeout
+	else:
+		visual.bump_blocked()
+		await get_tree().create_timer(BLOCKED_STEP).timeout
+
+func _play_sweep(visual: RobotVisual, event: Dictionary) -> void:
+	visual.sweep_slash()
+	var hits: Array = event.get("hits", [])
+	for hit in hits:
+		_apply_hit(hit)
+	await get_tree().create_timer(SWEEP_STEP).timeout
+
+func _play_slam(visual: RobotVisual, event: Dictionary) -> void:
+	visual.slam_pound()
+	var hits: Array = event.get("hits", [])
+	# Delay hit flashes until the robot lands (~0.25s into animation)
+	await get_tree().create_timer(0.25).timeout
+	for hit in hits:
+		_apply_hit(hit)
+	await get_tree().create_timer(SLAM_STEP - 0.25).timeout
+
+func _play_shockwave(visual: RobotVisual, event: Dictionary) -> void:
+	visual.pulse_shockwave()
+	var pushes: Array = event.get("pushes", [])
+	# Slight delay so the ring expands before targets react
+	await get_tree().create_timer(0.15).timeout
+	var any_fell := false
+	for push in pushes:
+		var target_id: int = push.get("target", -1)
+		var target_visual: RobotVisual = _visuals.get(target_id)
+		if not target_visual:
+			continue
+		if push.get("fell", false):
+			var pushed_to: Vector2i = push.get("pushed_to", Vector2i.ZERO)
+			var edge_world := _renderer.hex_to_world(pushed_to.x, pushed_to.y)
+			edge_world.y = HexGridRenderer.HEX_HEIGHT
+			target_visual.fall_off(edge_world)
+			any_fell = true
+		elif push.get("blocked", false):
+			target_visual.bump_blocked()
+		else:
+			var pushed_to: Vector2i = push.get("pushed_to", Vector2i.ZERO)
+			target_visual.move_to(_renderer.hex_to_robot_pos(pushed_to.x, pushed_to.y))
+	if any_fell:
+		await get_tree().create_timer(FALL_STEP).timeout
+	else:
+		await get_tree().create_timer(SHOCKWAVE_STEP - 0.15).timeout
+
+## Apply a hit from sweep/slam: flash the target and update its health.
+func _apply_hit(hit: Dictionary) -> void:
+	var target_id: int = hit.get("target", -1)
+	var target_visual: RobotVisual = _visuals.get(target_id)
+	if not target_visual:
+		return
+	var target_health: int = hit.get("target_health", 1)
+	var target_max_hp: int = hit.get("target_max_health", 100)
+	if target_health <= 0:
+		var target_robot: Robot = _game_manager.robots.get(target_id)
+		if target_robot:
+			target_visual.move_to(_renderer.hex_to_robot_pos(target_robot.position.x, target_robot.position.y), false)
+		target_visual.explode()
+	else:
+		target_visual.flash_hit()
+		target_visual.update_health(target_health, target_max_hp)
 
 ## Snap all visuals to the authoritative post-round robot state.
 func _sync_all_visuals() -> void:

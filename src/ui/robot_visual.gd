@@ -111,6 +111,129 @@ func shoot_rocket(target_world_pos: Vector3) -> void:
 		get_tree().create_timer(0.35).timeout.connect(spark.queue_free)
 	rocket.queue_free()
 
+## Sweep: arc-slash forward then snap back. Spawns an emissive arc mesh.
+func sweep_slash() -> void:
+	if _is_dead:
+		return
+	var origin := position
+	var fwd := position + Vector3(sin(rotation.y), 0.0, cos(rotation.y)) * 0.45
+	# Lunge forward
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_QUART)
+	tween.tween_property(self, "position", fwd, 0.10)
+	# Quick rotation jab (±15°) for a slash feel
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(self, "rotation:y", rotation.y + 0.26, 0.08)
+	tween.tween_property(self, "rotation:y", rotation.y - 0.26, 0.08)
+	tween.tween_property(self, "rotation:y", rotation.y, 0.06)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(self, "position", origin, 0.22)
+	# Spawn a fading arc mesh in front
+	var arc := MeshInstance3D.new()
+	var amesh := TorusMesh.new()
+	amesh.inner_radius = 0.40
+	amesh.outer_radius = 0.70
+	amesh.ring_segments = 12
+	amesh.rings = 3
+	arc.mesh = amesh
+	var amat := StandardMaterial3D.new()
+	amat.albedo_color               = Color(1.0, 0.45, 0.15, 0.85)
+	amat.emission_enabled           = true
+	amat.emission                   = Color(1.0, 0.35, 0.05)
+	amat.emission_energy_multiplier = 2.0
+	amat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+	arc.material_override = amat
+	arc.position = fwd + Vector3(0.0, 0.30, 0.0)
+	arc.rotation.x = PI / 2.0
+	arc.scale = Vector3(0.3, 0.3, 0.3)
+	get_parent().add_child(arc)
+	var at := arc.create_tween()
+	at.set_parallel(true)
+	at.tween_property(arc, "scale", Vector3(1.4, 1.4, 0.5), 0.30)
+	at.tween_property(amat, "albedo_color:a", 0.0, 0.35)
+	get_tree().create_timer(0.40).timeout.connect(arc.queue_free)
+
+## Slam: pound the ground. Robot hops up then smashes down with a ring burst.
+func slam_pound() -> void:
+	if _is_dead:
+		return
+	var origin := position
+	var tween := create_tween()
+	# Hop up
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(self, "position:y", origin.y + 0.60, 0.15)
+	# Slam down
+	tween.set_ease(Tween.EASE_IN)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(self, "position:y", origin.y, 0.10)
+	# Squash on impact
+	tween.tween_property(self, "scale", Vector3(1.15, 0.80, 1.15), 0.06)
+	tween.tween_property(self, "scale", Vector3.ONE, 0.12)
+	# Spawn a ground shockwave ring
+	var ring := MeshInstance3D.new()
+	var rmesh := TorusMesh.new()
+	rmesh.inner_radius = 0.15
+	rmesh.outer_radius = 0.30
+	rmesh.ring_segments = 18
+	rmesh.rings = 3
+	ring.mesh = rmesh
+	var rmat := StandardMaterial3D.new()
+	rmat.albedo_color               = Color(1.0, 0.70, 0.10, 0.90)
+	rmat.emission_enabled           = true
+	rmat.emission                   = Color(1.0, 0.55, 0.0)
+	rmat.emission_energy_multiplier = 2.5
+	rmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring.material_override = rmat
+	ring.position = origin + Vector3(0.0, 0.05, 0.0)
+	ring.rotation.x = PI / 2.0
+	ring.scale = Vector3(0.2, 0.2, 0.2)
+	get_parent().add_child(ring)
+	# Delay the ring until the robot lands (~0.25s into the animation)
+	var rt := ring.create_tween()
+	rt.tween_interval(0.25)
+	rt.set_parallel(true)
+	rt.tween_property(ring, "scale", Vector3(3.5, 3.5, 1.0), 0.40)
+	rt.tween_property(rmat, "albedo_color:a", 0.0, 0.45)
+	get_tree().create_timer(0.75).timeout.connect(ring.queue_free)
+
+## Shockwave: expanding energy pulse ring (no lunge, robot stays put).
+func pulse_shockwave() -> void:
+	if _is_dead:
+		return
+	# Subtle vertical bob
+	var origin_y := position.y
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "position:y", origin_y + 0.15, 0.10)
+	tween.tween_property(self, "position:y", origin_y, 0.15)
+	# Expanding ring
+	var ring := MeshInstance3D.new()
+	var rmesh := TorusMesh.new()
+	rmesh.inner_radius = 0.10
+	rmesh.outer_radius = 0.22
+	rmesh.ring_segments = 24
+	rmesh.rings = 3
+	ring.mesh = rmesh
+	var rmat := StandardMaterial3D.new()
+	rmat.albedo_color               = Color(0.55, 0.40, 0.90, 0.80)
+	rmat.emission_enabled           = true
+	rmat.emission                   = Color(0.50, 0.30, 0.85)
+	rmat.emission_energy_multiplier = 3.0
+	rmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring.material_override = rmat
+	ring.position = position + Vector3(0.0, 0.20, 0.0)
+	ring.rotation.x = PI / 2.0
+	ring.scale = Vector3(0.3, 0.3, 0.3)
+	get_parent().add_child(ring)
+	var rt := ring.create_tween()
+	rt.set_parallel(true)
+	rt.tween_property(ring, "scale", Vector3(5.0, 5.0, 1.0), 0.50)
+	rt.tween_property(rmat, "albedo_color:a", 0.0, 0.55)
+	get_tree().create_timer(0.60).timeout.connect(ring.queue_free)
+
 func explode() -> void:
 	if _is_dead:
 		return
