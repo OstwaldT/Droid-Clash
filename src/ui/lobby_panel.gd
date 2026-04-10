@@ -44,19 +44,8 @@ func _build_ui() -> void:
 
 	# Centred card panel
 	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.06, 0.12, 0.96)
-	style.set_corner_radius_all(14)
-	style.border_width_left   = 1
-	style.border_width_right  = 1
-	style.border_width_top    = 1
-	style.border_width_bottom = 1
-	style.border_color = Color(0.28, 0.28, 0.50, 0.9)
-	style.content_margin_left   = 28.0
-	style.content_margin_right  = 28.0
-	style.content_margin_top    = 24.0
-	style.content_margin_bottom = 24.0
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel",
+		UITheme.make_panel_style(Vector4(28, 28, 24, 24), 8))
 	panel.anchor_left   = 0.5
 	panel.anchor_top    = 0.5
 	panel.anchor_right  = 0.5
@@ -71,35 +60,15 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 12)
 	panel.add_child(vbox)
 
-	# Title
-	var title := Label.new()
-	title.text = "DROID-CLASH"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 42)
-	title.add_theme_color_override("font_color", Color(1.0, 0.82, 0.08))
-	vbox.add_child(title)
-
-	# Sub-heading
-	var sub := Label.new()
-	sub.text = "L  O  B  B  Y"
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 12)
-	sub.add_theme_color_override("font_color", Color(0.45, 0.45, 0.60))
-	vbox.add_child(sub)
-
-	vbox.add_child(_make_separator())
+	vbox.add_child(UITheme.make_title("DROID-CLASH"))
+	vbox.add_child(UITheme.make_subtitle("L  O  B  B  Y"))
+	vbox.add_child(UITheme.make_separator())
 
 	# Map size selector
 	vbox.add_child(_build_map_size_row())
 
-	vbox.add_child(_make_separator())
-
-	# Section label
-	var section := Label.new()
-	section.text = "CONNECTED PLAYERS"
-	section.add_theme_font_size_override("font_size", 11)
-	section.add_theme_color_override("font_color", Color(0.40, 0.40, 0.55))
-	vbox.add_child(section)
+	vbox.add_child(UITheme.make_separator())
+	vbox.add_child(UITheme.make_section_header("CONNECTED PLAYERS"))
 
 	# Player rows
 	_player_list = VBoxContainer.new()
@@ -107,13 +76,12 @@ func _build_ui() -> void:
 	vbox.add_child(_player_list)
 	_show_empty_state()
 
-	vbox.add_child(_make_separator())
+	vbox.add_child(UITheme.make_separator())
 
 	# Footer count
 	_count_label = Label.new()
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_count_label.add_theme_font_size_override("font_size", 13)
-	_count_label.add_theme_color_override("font_color", Color(0.60, 0.60, 0.72))
+	UITheme.apply_font(_count_label, 15, UITheme.MUTED)
 	vbox.add_child(_count_label)
 	_refresh_count()
 
@@ -121,8 +89,7 @@ func _build_ui() -> void:
 	_countdown_label = Label.new()
 	_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_countdown_label.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	_countdown_label.add_theme_font_size_override("font_size", 120)
-	_countdown_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.08))
+	UITheme.apply_font(_countdown_label, 120, UITheme.HIGHLIGHT)
 	_countdown_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	_countdown_label.custom_minimum_size = Vector2(200, 160)
 	_countdown_label.visible = false
@@ -140,10 +107,7 @@ func _build_map_size_row() -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 
-	var lbl := Label.new()
-	lbl.text = "MAP SIZE"
-	lbl.add_theme_font_size_override("font_size", 11)
-	lbl.add_theme_color_override("font_color", Color(0.40, 0.40, 0.55))
+	var lbl := UITheme.make_section_header("MAP SIZE")
 	lbl.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	lbl.custom_minimum_size.x = 82
 	lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -154,7 +118,7 @@ func _build_map_size_row() -> HBoxContainer:
 		var btn := Button.new()
 		btn.text = "%s\n%d tiles · %sp" % [entry[0], entry[2], entry[3]]
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.add_theme_font_size_override("font_size", 11)
+		UITheme.apply_font(btn, 13)
 		btn.set_meta("side_length", entry[1])
 		btn.pressed.connect(_on_map_size_pressed.bind(btn))
 		_map_size_buttons.append(btn)
@@ -173,43 +137,23 @@ func _refresh_map_buttons() -> void:
 	var current: int = game_manager.map_size if game_manager else 5
 	for btn in _map_size_buttons:
 		var selected: bool = btn.get_meta("side_length") == current
-		var style := StyleBoxFlat.new()
-		style.set_corner_radius_all(6)
+		var style: StyleBoxFlat
 		if selected:
-			style.bg_color     = Color(0.18, 0.42, 0.72, 0.95)
-			style.border_color = Color(0.40, 0.70, 1.0, 1.0)
+			style = UITheme.make_button_style(UITheme.HIGHLIGHT, UITheme.HIGHLIGHT)
 		else:
-			style.bg_color     = Color(0.12, 0.12, 0.20, 0.80)
-			style.border_color = Color(0.28, 0.28, 0.45, 0.7)
-		style.border_width_left   = 1
-		style.border_width_right  = 1
-		style.border_width_top    = 1
-		style.border_width_bottom = 1
-		style.content_margin_left   = 8
-		style.content_margin_right  = 8
-		style.content_margin_top    = 6
-		style.content_margin_bottom = 6
+			style = UITheme.make_button_style()
 		btn.add_theme_stylebox_override("normal", style)
 		btn.add_theme_color_override("font_color",
-			Color(1.0, 1.0, 1.0) if selected else Color(0.55, 0.55, 0.70))
-
-func _make_separator() -> HSeparator:
-	var sep := HSeparator.new()
-	var sep_style := StyleBoxFlat.new()
-	sep_style.bg_color = Color(0.25, 0.25, 0.40, 0.6)
-	sep_style.content_margin_top = 1.0
-	sep.add_theme_stylebox_override("separator", sep_style)
-	return sep
+			UITheme.BG if selected else Color(0.55, 0.55, 0.70))
 
 # --- Player row helpers ---
 
 func _show_empty_state() -> void:
 	var empty := Label.new()
 	empty.name = "EmptyLabel"
-	empty.text = "No players connected yet…"
+	empty.text = "No players connected yet..."
 	empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	empty.add_theme_font_size_override("font_size", 13)
-	empty.add_theme_color_override("font_color", Color(0.32, 0.32, 0.42))
+	UITheme.apply_font(empty, 15, Color(0.32, 0.32, 0.42))
 	_player_list.add_child(empty)
 
 func _add_player_row(player_id: int, player_name: String) -> void:
@@ -228,26 +172,20 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 		swatch_color = Color.html(robot_ref.color)
 	else:
 		swatch_color = ColorPalette.color_for(player_id - 1)
-	var swatch := ColorRect.new()
-	swatch.color = swatch_color
-	swatch.custom_minimum_size = Vector2(14, 14)
-	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(swatch)
+	row.add_child(UITheme.make_swatch(swatch_color, 14.0))
 
 	# Player number
 	var num_label := Label.new()
 	num_label.text = "P%d" % player_id
 	num_label.custom_minimum_size.x = 30
-	num_label.add_theme_font_size_override("font_size", 14)
-	num_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
+	UITheme.apply_font(num_label, 16, Color(0.55, 0.55, 0.65))
 	row.add_child(num_label)
 
 	# Name
 	var name_label := Label.new()
 	name_label.text = player_name
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_font_size_override("font_size", 16)
-	name_label.add_theme_color_override("font_color", Color.WHITE)
+	UITheme.apply_font(name_label, 18, UITheme.TEXT)
 	row.add_child(name_label)
 
 	# Ready status
@@ -256,8 +194,7 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	status.text = "○  WAITING"
 	status.custom_minimum_size.x = 110
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	status.add_theme_font_size_override("font_size", 13)
-	status.add_theme_color_override("font_color", Color(0.40, 0.40, 0.52))
+	UITheme.apply_font(status, 15, Color(0.40, 0.40, 0.52))
 	row.add_child(status)
 
 	_player_list.add_child(row)
@@ -278,10 +215,10 @@ func _refresh_count() -> void:
 
 	if need > 0:
 		_count_label.text = "%d / %d players  —  need %d more to start" % [count, max_p, need]
-		_count_label.add_theme_color_override("font_color", Color(0.60, 0.60, 0.72))
+		_count_label.add_theme_color_override("font_color", UITheme.MUTED)
 	else:
 		_count_label.text = "%d / %d players  —  waiting for all to ready up" % [count, max_p]
-		_count_label.add_theme_color_override("font_color", Color(0.20, 0.88, 0.35))
+		_count_label.add_theme_color_override("font_color", UITheme.SUCCESS)
 
 # --- Signal handlers ---
 
@@ -298,8 +235,8 @@ func _on_player_ready(player_id: int) -> void:
 	if not row:
 		return
 	var status := row.get_node("StatusLabel") as Label
-	status.text = "✓  READY"
-	status.add_theme_color_override("font_color", Color(0.18, 0.88, 0.32))
+	status.text = ">  READY"
+	status.add_theme_color_override("font_color", UITheme.SUCCESS)
 
 func _on_game_started() -> void:
 	visible = false

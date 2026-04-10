@@ -6,6 +6,7 @@ class_name RobotVisualBase
 ## Animation effects are in the RobotVisual subclass.
 ## Robot body is built procedurally from BoxMesh parts (voxel style).
 
+const MOVE_DURATION: float = 0.75
 const LABEL_Y:   float = 1.70
 const HP_BAR_Y:  float = 2.00
 const HP_BAR_W:  float = 1.40
@@ -116,7 +117,8 @@ func _build_label(pname: String) -> void:
 	_name_label.position.y    = LABEL_Y
 	_name_label.billboard     = BaseMaterial3D.BILLBOARD_ENABLED
 	_name_label.pixel_size    = 0.005
-	_name_label.font_size     = 28
+	_name_label.font          = UITheme.FONT
+	_name_label.font_size     = 32
 	_name_label.outline_size  = 6
 	_name_label.modulate      = Color.WHITE
 	_name_label.no_depth_test = true
@@ -152,7 +154,7 @@ func _tint_meshes(node: Node, color: Color) -> void:
 
 # --- State sync (called each time game state is applied to the visual) ---
 
-func move_to(world_pos: Vector3, animate: bool = true, duration: float = 0.75) -> void:
+func move_to(world_pos: Vector3, animate: bool = true, duration: float = MOVE_DURATION) -> void:
 	if animate and not _is_dead:
 		var tween = create_tween()
 		tween.set_ease(Tween.EASE_IN_OUT)

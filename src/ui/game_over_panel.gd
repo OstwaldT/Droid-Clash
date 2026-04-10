@@ -37,21 +37,10 @@ func _build_ui() -> void:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(dim)
 
-	# Centred panel
+	# Centred panel — gold border for emphasis
 	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.05, 0.05, 0.10, 0.97)
-	style.set_corner_radius_all(16)
-	style.border_width_left   = 2
-	style.border_width_right  = 2
-	style.border_width_top    = 2
-	style.border_width_bottom = 2
-	style.border_color        = Color(1.0, 0.82, 0.08, 0.90)  # gold border
-	style.content_margin_left   = 32.0
-	style.content_margin_right  = 32.0
-	style.content_margin_top    = 28.0
-	style.content_margin_bottom = 28.0
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel",
+		UITheme.make_panel_style(Vector4(32, 32, 28, 28), 8, UITheme.HIGHLIGHT))
 	panel.anchor_left   = 0.5
 	panel.anchor_top    = 0.5
 	panel.anchor_right  = 0.5
@@ -66,51 +55,23 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 14)
 	panel.add_child(vbox)
 
-	# Title
-	var title := Label.new()
-	title.text = "💥  GAME OVER  💥"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
-	title.add_theme_color_override("font_color", Color(1.0, 0.82, 0.08))
-	vbox.add_child(title)
-
-	var sub := Label.new()
-	sub.text = "R  E  S  U  L  T  S"
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 11)
-	sub.add_theme_color_override("font_color", Color(0.42, 0.42, 0.58))
-	vbox.add_child(sub)
-
-	vbox.add_child(_make_separator(Color(1.0, 0.82, 0.08, 0.50)))
+	vbox.add_child(UITheme.make_title(">> GAME OVER <<", 40))
+	vbox.add_child(UITheme.make_subtitle("R  E  S  U  L  T  S"))
+	vbox.add_child(UITheme.make_separator(0.50))
 
 	# Winner block (populated dynamically)
 	_winner_label = Label.new()
 	_winner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_winner_label.add_theme_font_size_override("font_size", 28)
-	_winner_label.add_theme_color_override("font_color", Color.WHITE)
+	UITheme.apply_font(_winner_label, 32, UITheme.TEXT)
 	_winner_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(_winner_label)
 
-	vbox.add_child(_make_separator(Color(0.25, 0.25, 0.40, 0.60)))
-
-	# Standings header
-	var standings_hdr := Label.new()
-	standings_hdr.text = "FINAL STANDINGS"
-	standings_hdr.add_theme_font_size_override("font_size", 11)
-	standings_hdr.add_theme_color_override("font_color", Color(0.42, 0.42, 0.58))
-	vbox.add_child(standings_hdr)
+	vbox.add_child(UITheme.make_separator(0.60))
+	vbox.add_child(UITheme.make_section_header("FINAL STANDINGS"))
 
 	_result_list = VBoxContainer.new()
 	_result_list.add_theme_constant_override("separation", 6)
 	vbox.add_child(_result_list)
-
-func _make_separator(color: Color) -> HSeparator:
-	var sep := HSeparator.new()
-	var s := StyleBoxFlat.new()
-	s.bg_color = color
-	s.content_margin_top = 1.0
-	sep.add_theme_stylebox_override("separator", s)
-	return sep
 
 # --- Populate on game end ---
 
@@ -130,7 +91,7 @@ func show_result() -> void:
 	if winner_id != -1:
 		var w_robot: Robot = game_manager.robots.get(winner_id)
 		var w_color := Color.html(w_robot.color) if w_robot else Color.WHITE
-		_winner_label.text = "🏆  %s  WINS!" % (w_robot.bot_name if w_robot else "???")
+		_winner_label.text = "[W]  %s  WINS!" % (w_robot.bot_name if w_robot else "???")
 		_winner_label.add_theme_color_override("font_color", w_color)
 	else:
 		_winner_label.text = "— DRAW —"
@@ -164,31 +125,28 @@ func _make_result_row(robot: Robot, is_winner: bool) -> Array:
 	row.add_theme_constant_override("separation", 10)
 	row.custom_minimum_size.y = 36.0
 
-	var robot_color := Color.html(robot.color) if not robot.color.is_empty() else Color.WHITE
+	var robot_color := Color.html(robot.color) if not robot.color.is_empty() else UITheme.TEXT
 
-	# Color swatch
-	var swatch := ColorRect.new()
-	swatch.color = robot_color
-	swatch.custom_minimum_size = Vector2(12, 12)
-	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(swatch)
+	row.add_child(UITheme.make_swatch(robot_color))
 
-	# Trophy for winner, skull for dead
+	# Text badge for winner / dead
 	var icon_lbl := Label.new()
 	if is_winner:
-		icon_lbl.text = "🏆"
+		icon_lbl.text = "[W]"
+		icon_lbl.add_theme_color_override("font_color", UITheme.HIGHLIGHT)
 	elif not robot.is_alive():
-		icon_lbl.text = "💀"
+		icon_lbl.text = "[X]"
+		icon_lbl.add_theme_color_override("font_color", UITheme.DANGER)
 	else:
-		icon_lbl.text = "  "
-	icon_lbl.add_theme_font_size_override("font_size", 16)
+		icon_lbl.text = "   "
+	UITheme.apply_font(icon_lbl, 18)
 	row.add_child(icon_lbl)
 
 	# Name
 	var name_lbl := Label.new()
 	name_lbl.text = robot.bot_name
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", 16)
+	UITheme.apply_font(name_lbl, 18)
 	name_lbl.add_theme_color_override("font_color",
 		robot_color if robot.is_alive() else Color(0.45, 0.45, 0.45))
 	row.add_child(name_lbl)
@@ -198,9 +156,9 @@ func _make_result_row(robot: Robot, is_winner: bool) -> Array:
 	hp_lbl.text = "%d / %d HP" % [robot.health, robot.max_health]
 	hp_lbl.custom_minimum_size.x = 100
 	hp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	hp_lbl.add_theme_font_size_override("font_size", 15)
+	UITheme.apply_font(hp_lbl, 17)
 	hp_lbl.add_theme_color_override("font_color",
-		Color(0.18, 0.88, 0.32) if robot.is_alive() else Color(0.60, 0.22, 0.22))
+		UITheme.SUCCESS if robot.is_alive() else UITheme.DANGER)
 	row.add_child(hp_lbl)
 
 	# Rematch indicator — empty until the player opts in
@@ -208,7 +166,7 @@ func _make_result_row(robot: Robot, is_winner: bool) -> Array:
 	rematch_lbl.text = ""
 	rematch_lbl.custom_minimum_size.x = 28
 	rematch_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rematch_lbl.add_theme_font_size_override("font_size", 16)
+	UITheme.apply_font(rematch_lbl, 18)
 	row.add_child(rematch_lbl)
 
 	return [row, rematch_lbl]
@@ -218,4 +176,6 @@ func _make_result_row(robot: Robot, is_winner: bool) -> Array:
 func update_rematch(requests: Dictionary) -> void:
 	for player_id in _rematch_icons:
 		var lbl: Label = _rematch_icons[player_id]
-		lbl.text = "🔄" if player_id in requests else ""
+		lbl.text = "[R]" if player_id in requests else ""
+		if player_id in requests:
+			lbl.add_theme_color_override("font_color", UITheme.HIGHLIGHT)

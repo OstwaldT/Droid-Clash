@@ -4,7 +4,7 @@ class_name PlayerStatusHUD
 
 ## Compact player-status overlay shown on the 3D board during gameplay.
 ## Anchored to the top-right corner.
-## Statuses:  "…  Selecting"  |  "✓  Submitted"  |  "⚡  Acting"
+## Statuses:  "..  Selecting"  |  ">  Submitted"  |  ">> Acting"
 
 const PANEL_W: float  = 280.0
 const ROW_H:   float  = 48.0
@@ -12,8 +12,8 @@ const PADDING: float  = 12.0
 
 # Status colors
 const COLOR_SELECTING := Color(0.50, 0.50, 0.62)
-const COLOR_SUBMITTED := Color(0.15, 0.88, 0.32)
-const COLOR_ACTING    := Color(0.95, 0.62, 0.08)
+const COLOR_SUBMITTED := Color(0.25, 0.78, 0.38)   # UITheme.SUCCESS
+const COLOR_ACTING    := Color(0.94, 0.75, 0.31)   # UITheme.HIGHLIGHT
 const COLOR_DEAD      := Color(0.50, 0.50, 0.50)
 
 var game_manager: GameManager
@@ -43,21 +43,9 @@ func _build_ui() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 
-	# Panel background
 	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.06, 0.12, 0.88)
-	style.set_corner_radius_all(10)
-	style.border_width_left   = 1
-	style.border_width_right  = 1
-	style.border_width_top    = 1
-	style.border_width_bottom = 1
-	style.border_color        = Color(0.25, 0.25, 0.42, 0.80)
-	style.content_margin_left   = PADDING
-	style.content_margin_right  = PADDING
-	style.content_margin_top    = PADDING
-	style.content_margin_bottom = PADDING
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel",
+		UITheme.make_panel_style(Vector4(PADDING, PADDING, PADDING, PADDING), 6))
 
 	# Anchor top-right
 	panel.anchor_left   = 1.0
@@ -74,19 +62,13 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 4)
 	panel.add_child(vbox)
 
-	# Section header
+	# Section header — slightly smaller than the default factory produces
 	var header := Label.new()
 	header.text = "PLAYERS"
-	header.add_theme_font_size_override("font_size", 10)
-	header.add_theme_color_override("font_color", Color(0.40, 0.40, 0.56))
+	UITheme.apply_font(header, 12, UITheme.MUTED)
 	vbox.add_child(header)
 
-	var sep := HSeparator.new()
-	var sep_style := StyleBoxFlat.new()
-	sep_style.bg_color = Color(0.22, 0.22, 0.38, 0.70)
-	sep_style.content_margin_top = 1.0
-	sep.add_theme_stylebox_override("separator", sep_style)
-	vbox.add_child(sep)
+	vbox.add_child(UITheme.make_separator(0.70))
 
 	_player_list = VBoxContainer.new()
 	_player_list.add_theme_constant_override("separation", 6)
@@ -108,12 +90,7 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	row.add_theme_constant_override("separation", 8)
 	row.custom_minimum_size.y = ROW_H
 
-	# Colored swatch
-	var swatch := ColorRect.new()
-	swatch.color = color
-	swatch.custom_minimum_size = Vector2(10, 10)
-	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(swatch)
+	row.add_child(UITheme.make_swatch(color, 10.0))
 
 	# ── Centre column: name + HP bar ───────────────────────────────────
 	var centre := VBoxContainer.new()
@@ -125,8 +102,7 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	var name_lbl := Label.new()
 	name_lbl.text = player_name
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", 14)
-	name_lbl.add_theme_color_override("font_color", Color.WHITE)
+	UITheme.apply_font(name_lbl, 16, UITheme.TEXT)
 	name_lbl.clip_text = true
 	centre.add_child(name_lbl)
 
@@ -144,7 +120,7 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 
 	var bg_rect := ColorRect.new()
 	bg_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg_rect.color = Color(0.12, 0.12, 0.20)
+	bg_rect.color = UITheme.SECTION
 	bar_bg.add_child(bg_rect)
 
 	var hp_ratio: float = clampf(float(robot.health if robot else 100) / 100.0, 0.0, 1.0)
@@ -164,18 +140,16 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	hp_lbl.text = "%d" % (robot.health if robot else 100)
 	hp_lbl.custom_minimum_size.x = 28
 	hp_lbl.horizontal_alignment  = HORIZONTAL_ALIGNMENT_RIGHT
-	hp_lbl.add_theme_font_size_override("font_size", 11)
-	hp_lbl.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+	UITheme.apply_font(hp_lbl, 13, Color(0.75, 0.75, 0.75))
 	hp_row.add_child(hp_lbl)
 
 	# ── Status badge ───────────────────────────────────────────────────
 	var status_lbl := Label.new()
-	status_lbl.text = "…  Selecting"
+	status_lbl.text = "..  Selecting"
 	status_lbl.custom_minimum_size.x = 108
 	status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	status_lbl.size_flags_vertical  = Control.SIZE_SHRINK_CENTER
-	status_lbl.add_theme_font_size_override("font_size", 13)
-	status_lbl.add_theme_color_override("font_color", COLOR_SELECTING)
+	UITheme.apply_font(status_lbl, 15, COLOR_SELECTING)
 	row.add_child(status_lbl)
 
 	_player_list.add_child(row)
@@ -227,11 +201,11 @@ func _on_player_left(player_id: int) -> void:
 	_row_map.erase(player_id)
 
 func _on_player_submitted(player_id: int) -> void:
-	_set_status(player_id, "✓  Submitted", COLOR_SUBMITTED)
+	_set_status(player_id, ">  Submitted", COLOR_SUBMITTED)
 
 func _on_round_starting() -> void:
 	for player_id in _row_map.keys():
-		_set_status(player_id, "⚡  Acting", COLOR_ACTING)
+		_set_status(player_id, ">> Acting", COLOR_ACTING)
 
 func _on_game_started() -> void:
 	# Populate rows for players who joined before game_started fired
@@ -245,4 +219,4 @@ func _on_turn_executed(_events: Array) -> void:
 	# Update health for all players then reset status to Selecting
 	for player_id in _row_map.keys():
 		_update_health(player_id)
-		_set_status(player_id, "…  Selecting", COLOR_SELECTING)
+		_set_status(player_id, "..  Selecting", COLOR_SELECTING)
