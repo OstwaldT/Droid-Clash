@@ -1,10 +1,7 @@
 <template>
   <div class="lobby-screen ui-screen flex flex-col items-center justify-center p-4">
     <div class="ui-panel p-8 w-full max-w-md relative overflow-hidden">
-      <h1 class="text-center mb-8 text-[#f0c050] leading-[1.8]">
-        <span class="block text-xs mb-4">DROID</span>
-        <span class="block text-xl">CLASH</span>
-      </h1>
+      <h1 class="text-center mb-8 text-[#f0c050] text-xl">DROID CLASH</h1>
 
       <!-- Countdown overlay -->
       <Transition name="countdown">
