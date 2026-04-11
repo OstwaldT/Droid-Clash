@@ -66,7 +66,8 @@ func fire_ring() -> void:
 	rt.tween_property(rmat, "emission_energy_multiplier", 0.0,           0.38)
 	get_tree().create_timer(0.50).timeout.connect(ring.queue_free)
 
-
+## Attack: quick lunge forward and snap back.
+func strike_forward() -> void:
 	if _is_dead:
 		return
 	var origin := position
