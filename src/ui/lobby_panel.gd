@@ -6,7 +6,6 @@ class_name LobbyPanel
 ## Hides automatically when game_started fires.
 
 const PANEL_W: float = 560.0
-const PANEL_H: float = 680.0
 const PLAYER_LIST_MAX_H: float = 260.0
 
 ## Player colours come from the ColorPalette singleton.
@@ -43,17 +42,26 @@ func _build_ui() -> void:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(dim)
 
-	# CenterContainer reliably centres its child regardless of content size
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_child(center)
+	# ScrollContainer fills the screen; allows scrolling when panel is taller than viewport.
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(scroll)
 
-	# Centred card panel — width driven by content, min PANEL_W
+	# VBoxContainer: stretches to at least viewport height, centres panel when shorter.
+	var vwrap := VBoxContainer.new()
+	vwrap.alignment = BoxContainer.ALIGNMENT_CENTER
+	vwrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vwrap.size_flags_vertical   = Control.SIZE_EXPAND_FILL
+	scroll.add_child(vwrap)
+
+	# The panel itself — min width PANEL_W, height content-driven.
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(PANEL_W, PANEL_H)
+	panel.custom_minimum_size = Vector2(PANEL_W, 0)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	panel.add_theme_stylebox_override("panel",
 		UITheme.make_panel_style(Vector4(28, 28, 24, 24), 8))
-	center.add_child(panel)
+	vwrap.add_child(panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 12)
