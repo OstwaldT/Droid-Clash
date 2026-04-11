@@ -28,7 +28,14 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 
 		# Wall blocks the rocket
 		if not grid.is_walkable(next_pos):
-			break
+			return {
+				"type":     type_id,
+				"success":  false,
+				"message":  "Rocket hit a wall",
+				"damage":   0,
+				"hit_pos":  next_pos,
+				"hit_wall": true,
+			}
 
 		# Check for a robot at this tile
 		for r: Robot in all_robots.values():

@@ -191,6 +191,10 @@ func _play_shoot(visual: RobotVisual, event: Dictionary) -> void:
 			else:
 				target_visual.flash_hit()
 				target_visual.update_health(target_health, target_max_hp)
+	elif event.get("hit_wall", false):
+		var wall_world := _renderer.hex_to_world(hit_pos.x, hit_pos.y)
+		wall_world.y = visual.position.y + 0.20
+		visual.rocket_wall_hit(wall_world)
 	await get_tree().create_timer(0.50).timeout
 
 func _play_strafe(visual: RobotVisual, event: Dictionary) -> void:
@@ -309,6 +313,10 @@ func _play_disorient(visual: RobotVisual, event: Dictionary) -> void:
 			await get_tree().create_timer(0.30).timeout
 			var new_dir: int = event.get("new_direction", 0)
 			target_vis.set_robot_direction(new_dir, true)
+	elif event.get("hit_wall", false):
+		var wall_world := _renderer.hex_to_world(hit_pos.x, hit_pos.y)
+		wall_world.y = visual.position.y + 0.20
+		visual.disorient_wall_hit(wall_world)
 	await get_tree().create_timer(DISORIENT_STEP - 0.62).timeout
 
 ## Snap all visuals to the authoritative post-round robot state.

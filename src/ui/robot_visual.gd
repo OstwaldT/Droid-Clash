@@ -119,8 +119,8 @@ func fall_off(edge_pos: Vector3, slide_to_edge: bool = true) -> void:
 func shoot_rocket(target_world_pos: Vector3) -> void:
 	var rocket := MeshInstance3D.new()
 	var rmesh  := SphereMesh.new()
-	rmesh.radius = 0.08
-	rmesh.height = 0.16
+	rmesh.radius = 0.16
+	rmesh.height = 0.32
 	rocket.mesh = rmesh
 	var rmat := StandardMaterial3D.new()
 	rmat.albedo_color               = Color(1.0, 0.65, 0.1)
@@ -161,12 +161,39 @@ func shoot_rocket(target_world_pos: Vector3) -> void:
 		get_tree().create_timer(0.35).timeout.connect(spark.queue_free)
 	rocket.queue_free()
 
+## Orange burst explosion when a rocket hits a wall tile.
+func rocket_wall_hit(wall_world: Vector3) -> void:
+	var burst_pos := wall_world
+	for i in range(8):
+		var spark := MeshInstance3D.new()
+		var smesh := SphereMesh.new()
+		smesh.radius = randf_range(0.06, 0.14)
+		smesh.height = smesh.radius * 2.0
+		spark.mesh = smesh
+		var smat := StandardMaterial3D.new()
+		smat.albedo_color               = Color(1.0, randf_range(0.2, 0.7), 0.0)
+		smat.emission_enabled           = true
+		smat.emission                   = smat.albedo_color
+		smat.emission_energy_multiplier = 4.0
+		spark.material_override = smat
+		spark.position = burst_pos
+		get_parent().add_child(spark)
+		var angle  := TAU * float(i) / 8.0 + randf_range(-0.3, 0.3)
+		var spread := randf_range(0.25, 0.60)
+		var peak   := randf_range(0.10, 0.45)
+		var dest   := burst_pos + Vector3(sin(angle) * spread, peak, cos(angle) * spread)
+		var st := spark.create_tween()
+		st.set_parallel(true)
+		st.tween_property(spark, "position", dest,         0.35)
+		st.tween_property(spark, "scale",    Vector3.ZERO, 0.30)
+		get_tree().create_timer(0.40).timeout.connect(spark.queue_free)
+
 ## Disorient: spinning purple orb flies toward target hex.
 func shoot_disorient(target_world_pos: Vector3) -> void:
 	var proj  := MeshInstance3D.new()
 	var pmesh := TorusMesh.new()
-	pmesh.inner_radius  = 0.05
-	pmesh.outer_radius  = 0.10
+	pmesh.inner_radius  = 0.12
+	pmesh.outer_radius  = 0.24
 	pmesh.ring_segments = 14
 	pmesh.rings         = 5
 	proj.mesh = pmesh
@@ -188,6 +215,34 @@ func shoot_disorient(target_world_pos: Vector3) -> void:
 	fly.tween_property(proj, "position",             dest,   0.30)
 	fly.tween_property(proj, "rotation_degrees:y",   1800.0, 0.30)
 	get_tree().create_timer(0.34).timeout.connect(proj.queue_free)
+
+## Purple burst explosion when a disorient pulse hits a wall tile.
+func disorient_wall_hit(wall_world: Vector3) -> void:
+	var burst_pos := wall_world
+	for i in range(6):
+		var spark := MeshInstance3D.new()
+		var smesh := SphereMesh.new()
+		smesh.radius = randf_range(0.05, 0.12)
+		smesh.height = smesh.radius * 2.0
+		spark.mesh = smesh
+		var smat := StandardMaterial3D.new()
+		smat.albedo_color               = Color(0.72, randf_range(0.05, 0.35), 1.0, 0.90)
+		smat.emission_enabled           = true
+		smat.emission                   = Color(0.50, 0.05, 0.90)
+		smat.emission_energy_multiplier = 3.5
+		smat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+		spark.material_override = smat
+		spark.position = burst_pos
+		get_parent().add_child(spark)
+		var angle  := TAU * float(i) / 6.0 + randf_range(-0.3, 0.3)
+		var spread := randf_range(0.20, 0.55)
+		var peak   := randf_range(0.10, 0.40)
+		var dest   := burst_pos + Vector3(sin(angle) * spread, peak, cos(angle) * spread)
+		var st := spark.create_tween()
+		st.set_parallel(true)
+		st.tween_property(spark, "position", dest,         0.30)
+		st.tween_property(spark, "scale",    Vector3.ZERO, 0.25)
+		get_tree().create_timer(0.35).timeout.connect(spark.queue_free)
 
 ## Disorient hit: dizzy orbiting sparks around the robot's head.
 func disorient_wobble() -> void:

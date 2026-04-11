@@ -27,7 +27,13 @@ func execute(robot: Robot, grid: HexGrid, all_robots: Dictionary) -> Dictionary:
 
 		# Wall blocks the pulse
 		if not grid.is_walkable(next_pos):
-			break
+			return {
+				"type":     type_id,
+				"success":  false,
+				"message":  "Disorient pulse hit a wall",
+				"hit_pos":  next_pos,
+				"hit_wall": true,
+			}
 
 		# Check for a robot at this hex
 		for r: Robot in all_robots.values():
