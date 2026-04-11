@@ -324,7 +324,7 @@ func sweep_arc_fire(arc_world_positions: Array) -> void:
 		rt.tween_property(rmat, "albedo_color:a", 0.0,                   0.42)
 		get_tree().create_timer(0.48).timeout.connect(ring.queue_free)
 
- Robot hops up then smashes down with a ring burst.
+## Robot hops up then smashes down with a ring burst.
 func slam_pound() -> void:
 	if _is_dead:
 		return
