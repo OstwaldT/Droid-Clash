@@ -273,7 +273,7 @@ func sweep_slash() -> void:
 
 ## Sweep: fire pillars and ground rings at each of the three arc hex world positions.
 func sweep_arc_fire(arc_world_positions: Array) -> void:
-	for wp: Vector3 in arc_world_positions:
+	for wp in arc_world_positions:
 		# Fire pillar — tall tapered cylinder
 		var col  := MeshInstance3D.new()
 		var cmesh := CylinderMesh.new()
@@ -369,7 +369,7 @@ func slam_pound() -> void:
 
 ## Slam: seismic ground crack + debris pops at each affected hex.
 func slam_ground_shake(hex_world_positions: Array) -> void:
-	for wp: Vector3 in hex_world_positions:
+	for wp in hex_world_positions:
 		# Ground impact flash — flat disc that expands and fades
 		var disc  := MeshInstance3D.new()
 		var dmesh := CylinderMesh.new()
