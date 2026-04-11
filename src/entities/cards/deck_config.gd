@@ -51,15 +51,15 @@ static func preset(key: String) -> DeckConfig:
 				Card.TYPE_MOVE:          4,
 				Card.TYPE_TURN_LEFT:     3,
 				Card.TYPE_TURN_RIGHT:    3,
-				Card.TYPE_SPRINT:        3,
-				Card.TYPE_180:           3,
+				Card.TYPE_SPRINT:        2,
+				Card.TYPE_180:           2,
 				Card.TYPE_ATTACK:        1,
 				Card.TYPE_SHOOT:         1,
 				Card.TYPE_STRAFE_LEFT:   3,
 				Card.TYPE_STRAFE_RIGHT:  3,
 				Card.TYPE_SWEEP:         1,
 				Card.TYPE_SLAM:          0,
-				Card.TYPE_SHOCKWAVE:     0,
+				Card.TYPE_SHOCKWAVE:     2,
 				Card.TYPE_DISORIENT:     2,
 			}, 9)
 		_:
