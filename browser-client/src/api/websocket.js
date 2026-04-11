@@ -13,6 +13,9 @@ class WebSocketClient {
     this.messageHandlers = {};
     // Phase buffered from game_state_update; applied only when round_ready arrives
     this.pendingPhase = null;
+    // Robots buffered from game_state_update; applied only when round_ready arrives
+    // so defeat overlays don't appear before the defeat animation plays.
+    this.pendingRobots = null;
     // Hand buffered from hand_update mid-round; applied only when round_ready arrives
     this.pendingHand = null;
   }
@@ -166,6 +169,8 @@ class WebSocketClient {
     gameStore.reset();  // Clear any stale state from a previous game
     this.pendingHand = null;
     this.pendingPhase = null;
+    this.pendingRobots = null;
+    this.pendingRobots = null;
     const playerStore = usePlayerStore();
     playerStore.setPlayer(data.playerId, playerStore.playerName);
     if (data.color) playerStore.setColor(data.color);
@@ -211,7 +216,9 @@ class WebSocketClient {
 
   handleGameStateUpdate(data) {
     const gameStore = useGameStore();
-    gameStore.robots = data.robots;
+    // Buffer robots — apply only at round_ready so defeat overlays and health
+    // updates don't appear before the Godot board animations finish.
+    this.pendingRobots = data.robots;
     gameStore.turnNumber = data.turnNumber;
     // Buffer the phase — don't switch yet; wait for round_ready (sent after
     // board animations complete) so players stay on the waiting screen during animation.
@@ -229,6 +236,10 @@ class WebSocketClient {
   // then deal the new hand. Safety fallback fires after 2s if component doesn't respond.
   handleRoundReady() {
     const gameStore = useGameStore();
+    if (this.pendingRobots) {
+      gameStore.robots = this.pendingRobots;
+      this.pendingRobots = null;
+    }
     if (this.pendingPhase) {
       gameStore.phase = this.pendingPhase;
       this.pendingPhase = null;
