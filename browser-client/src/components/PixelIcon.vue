@@ -364,9 +364,10 @@ const CATEGORY_COLORS = {
   'attack':        '#e86040',
   'sweep':         '#e86040',
   'slam':          '#e86040',
-  // Ranged / utility — violet
+  // Ranged / utility — violet / purple
   'shoot':         '#a070e0',
   'shockwave':     '#a070e0',
+  'disorient':     '#c040ff',
   // Archetypes
   'brawler':       '#e86040',
   'sniper':        '#40c8e0',
