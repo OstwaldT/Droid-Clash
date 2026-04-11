@@ -59,8 +59,8 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 12)
 	panel.add_child(vbox)
 
-	vbox.add_child(UITheme.make_title("DROID-CLASH"))
-	vbox.add_child(UITheme.make_subtitle("L  O  B  B  Y"))
+	vbox.add_child(UITheme.make_title("DROID-CLASH", 52))
+	vbox.add_child(UITheme.make_subtitle("L  O  B  B  Y", 18))
 	vbox.add_child(UITheme.make_separator())
 
 	# Map size selector
@@ -86,7 +86,7 @@ func _build_ui() -> void:
 	# Footer count
 	_count_label = Label.new()
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UITheme.apply_font(_count_label, 17, UITheme.MUTED)
+	UITheme.apply_font(_count_label, 19, UITheme.MUTED)
 	vbox.add_child(_count_label)
 	_refresh_count()
 
@@ -123,7 +123,7 @@ func _build_map_size_row() -> HBoxContainer:
 		var btn := Button.new()
 		btn.text = entry[0]
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UITheme.apply_font(btn, 15)
+		UITheme.apply_font(btn, 18)
 		btn.set_meta("side_length", entry[1])
 		btn.pressed.connect(_on_map_size_pressed.bind(btn))
 		_map_size_buttons.append(btn)
@@ -158,7 +158,7 @@ func _show_empty_state() -> void:
 	empty.name = "EmptyLabel"
 	empty.text = "No players connected yet..."
 	empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UITheme.apply_font(empty, 15, Color(0.32, 0.32, 0.42))
+	UITheme.apply_font(empty, 17, Color(0.32, 0.32, 0.42))
 	_player_list.add_child(empty)
 
 func _add_player_row(player_id: int, player_name: String) -> void:
@@ -183,23 +183,23 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	var num_label := Label.new()
 	num_label.text = "P%d" % player_id
 	num_label.custom_minimum_size.x = 30
-	UITheme.apply_font(num_label, 18, Color(0.55, 0.55, 0.65))
+	UITheme.apply_font(num_label, 20, Color(0.55, 0.55, 0.65))
 	row.add_child(num_label)
 
 	# Name
 	var name_label := Label.new()
 	name_label.text = player_name
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UITheme.apply_font(name_label, 20, UITheme.TEXT)
+	UITheme.apply_font(name_label, 22, UITheme.TEXT)
 	row.add_child(name_label)
 
 	# Ready status
 	var status := Label.new()
 	status.name = "StatusLabel"
 	status.text = "○  WAITING"
-	status.custom_minimum_size.x = 110
+	status.custom_minimum_size.x = 130
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	UITheme.apply_font(status, 17, Color(0.40, 0.40, 0.52))
+	UITheme.apply_font(status, 19, Color(0.40, 0.40, 0.52))
 	row.add_child(status)
 
 	_player_list.add_child(row)

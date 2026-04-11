@@ -107,11 +107,11 @@ static func make_title(text: String, size: int = 42, color: Color = HIGHLIGHT) -
 	return lbl
 
 ## Centred subtitle (e.g. "L  O  B  B  Y").
-static func make_subtitle(text: String) -> Label:
+static func make_subtitle(text: String, size: int = 14) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	apply_font(lbl, 14, MUTED)
+	apply_font(lbl, size, MUTED)
 	return lbl
 
 ## Small square color swatch used in player rows.
