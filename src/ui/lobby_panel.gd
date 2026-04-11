@@ -113,7 +113,7 @@ func _build_map_size_row() -> HBoxContainer:
 	_map_size_buttons.clear()
 	for entry in MAP_SIZES:
 		var btn := Button.new()
-		btn.text = "%s\n%d tiles · %sp" % [entry[0], entry[2], entry[3]]
+		btn.text = entry[0]
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		UITheme.apply_font(btn, 15)
 		btn.set_meta("side_length", entry[1])
