@@ -226,8 +226,19 @@ func _play_sweep(visual: RobotVisual, event: Dictionary) -> void:
 func _play_slam(visual: RobotVisual, event: Dictionary) -> void:
 	visual.slam_pound()
 	var hits: Array = event.get("hits", [])
-	# Delay hit flashes until the robot lands (~0.25s into animation)
+	# Wait for the robot to land before applying effects (~0.25s)
 	await get_tree().create_timer(0.25).timeout
+	# Compute the 6 adjacent hex world positions and shake them
+	var pid: int = event.get("playerId", -1)
+	var robot: Robot = _game_manager.robots.get(pid)
+	if robot:
+		var shake_positions: Array = []
+		for d in range(6):
+			var adj := _game_manager.grid.get_neighbor_in_direction(robot.position, d)
+			if _game_manager.grid.is_valid(adj) and _game_manager.grid.has_tile(adj):
+				shake_positions.append(_renderer.hex_to_world(adj.x, adj.y))
+		if shake_positions.size() > 0:
+			visual.slam_ground_shake(shake_positions)
 	for hit in hits:
 		_apply_hit(hit)
 	await get_tree().create_timer(SLAM_STEP - 0.25).timeout

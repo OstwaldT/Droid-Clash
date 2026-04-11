@@ -367,7 +367,59 @@ func slam_pound() -> void:
 	rt.tween_property(rmat, "albedo_color:a", 0.0, 0.45)
 	get_tree().create_timer(0.75).timeout.connect(ring.queue_free)
 
-## Shockwave: expanding purple donut that erupts from the caster's feet.
+## Slam: seismic ground crack + debris pops at each affected hex.
+func slam_ground_shake(hex_world_positions: Array) -> void:
+	for wp: Vector3 in hex_world_positions:
+		# Ground impact flash — flat disc that expands and fades
+		var disc  := MeshInstance3D.new()
+		var dmesh := CylinderMesh.new()
+		dmesh.height         = 0.04
+		dmesh.top_radius     = 0.26
+		dmesh.bottom_radius  = 0.26
+		disc.mesh = dmesh
+		var dmat := StandardMaterial3D.new()
+		dmat.albedo_color               = Color(1.0, 0.62, 0.08, 0.95)
+		dmat.emission_enabled           = true
+		dmat.emission                   = Color(0.9, 0.45, 0.0)
+		dmat.emission_energy_multiplier = 3.5
+		dmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+		disc.material_override = dmat
+		disc.position = Vector3(wp.x, 0.04, wp.z)
+		disc.scale    = Vector3(0.4, 1.0, 0.4)
+		get_parent().add_child(disc)
+		var dt := disc.create_tween()
+		dt.set_parallel(true)
+		dt.set_ease(Tween.EASE_OUT)
+		dt.tween_property(disc, "scale",          Vector3(1.7, 1.0, 1.7), 0.22)
+		dt.tween_property(dmat, "albedo_color:a", 0.0,                   0.28)
+		get_tree().create_timer(0.32).timeout.connect(disc.queue_free)
+		# Debris pops — 4 small rocks that jump and fall
+		for i in range(4):
+			var rock  := MeshInstance3D.new()
+			var rsize := randf_range(0.05, 0.09)
+			var rmesh := BoxMesh.new()
+			rmesh.size = Vector3(rsize, rsize, rsize)
+			rock.mesh  = rmesh
+			var rmat := StandardMaterial3D.new()
+			rmat.albedo_color = Color(0.52, 0.42, 0.32)
+			rmat.roughness    = 0.90
+			rock.material_override = rmat
+			var angle := TAU * float(i) / 4.0 + randf() * 0.5
+			var dist  := randf_range(0.10, 0.26)
+			var start := Vector3(wp.x + sin(angle) * dist, 0.06, wp.z + cos(angle) * dist)
+			var peak  := start + Vector3(0.0, randf_range(0.20, 0.38), 0.0)
+			var land  := start + Vector3(sin(angle) * 0.08, 0.0, cos(angle) * 0.08)
+			rock.position = start
+			get_parent().add_child(rock)
+			var rt := rock.create_tween()
+			rt.set_ease(Tween.EASE_OUT)
+			rt.set_trans(Tween.TRANS_QUAD)
+			rt.tween_property(rock, "position", peak, 0.12)
+			rt.set_ease(Tween.EASE_IN)
+			rt.tween_property(rock, "position", land, 0.14)
+			get_tree().create_timer(0.30).timeout.connect(rock.queue_free)
+
+
 func pulse_shockwave() -> void:
 	if _is_dead:
 		return
