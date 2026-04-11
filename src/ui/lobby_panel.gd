@@ -77,16 +77,16 @@ func _build_ui() -> void:
 	vbox.add_child(UITheme.make_separator())
 
 	# Player rows — inside a scroll container so large lobbies don't overflow
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, PLAYER_LIST_MAX_H)
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	vbox.add_child(scroll)
+	var player_scroll := ScrollContainer.new()
+	player_scroll.custom_minimum_size = Vector2(0, PLAYER_LIST_MAX_H)
+	player_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	player_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(player_scroll)
 
 	_player_list = VBoxContainer.new()
 	_player_list.add_theme_constant_override("separation", 8)
 	_player_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_player_list)
+	player_scroll.add_child(_player_list)
 	_show_empty_state()
 
 	vbox.add_child(UITheme.make_separator())
