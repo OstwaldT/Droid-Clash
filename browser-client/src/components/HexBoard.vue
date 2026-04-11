@@ -1,8 +1,8 @@
 <template>
-  <div class="hex-board ui-screen flex flex-col items-center justify-center p-4">
+  <div class="hex-board ui-screen flex flex-col items-center justify-center p-4 h-screen overflow-y-auto">
     <div class="ui-panel p-8 w-full max-w-4xl">
       <h1 class="text-xl text-center mb-3 text-[#f0c050]">Battle Grid</h1>
-      <p class="text-center ui-copy mb-6 text-[0.58rem]">Turn {{ gameStore.turnNumber }}</p>
+      <p class="text-center ui-copy mb-6 text-[0.65rem]">Turn {{ gameStore.turnNumber }}</p>
 
       <svg
         :width="canvasWidth"
