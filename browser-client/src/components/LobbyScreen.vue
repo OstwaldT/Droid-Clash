@@ -1,5 +1,5 @@
 <template>
-  <div class="lobby-screen ui-screen flex flex-col items-center justify-center p-4">
+  <div class="lobby-screen ui-screen flex flex-col items-center justify-center p-4 h-screen">
     <div class="ui-panel p-8 w-full max-w-md relative overflow-hidden">
       <h1 class="text-center mb-8 text-[#f0c050] text-xl">DROID CLASH</h1>
 
@@ -82,7 +82,7 @@
             >&lt;</button>
             <div class="flex-1 text-center">
               <div class="text-[#f0c050] mb-3 flex justify-center">
-                <PixelIcon :name="getArchetypeIconKey(currentArchetype.key)" :size="28" />
+                <PixelIcon :name="getArchetypeIconKey(currentArchetype.key)" :size="52" />
               </div>
               <div class="text-[0.65rem] text-[#f0c050] leading-[1.6]">{{ currentArchetype.label }}</div>
               <div class="text-[0.52rem] text-[#b7b7ca] mt-2 leading-[1.8]">{{ currentArchetype.desc }}</div>

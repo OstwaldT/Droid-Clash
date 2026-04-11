@@ -1,5 +1,5 @@
 <template>
-  <div class="game-over ui-screen flex flex-col items-center justify-center p-4">
+  <div class="game-over ui-screen flex flex-col items-center justify-center p-4 h-screen">
     <div class="ui-panel p-8 w-full max-w-md text-center">
       <div class="flex justify-center mb-4" :class="isVictory ? 'text-[#f0c050]' : 'text-[#8d8da6]'">
         <PixelIcon :name="isVictory ? 'attack' : 'lock'" :size="28" />
