@@ -66,7 +66,6 @@ func _build_ui() -> void:
 	vbox.add_child(_build_map_size_row())
 
 	vbox.add_child(UITheme.make_separator())
-	vbox.add_child(UITheme.make_section_header("CONNECTED PLAYERS"))
 
 	# Player rows
 	_player_list = VBoxContainer.new()
