@@ -5,8 +5,9 @@ class_name LobbyPanel
 ## Displayed over the 3D board while the game is in LOBBY phase.
 ## Hides automatically when game_started fires.
 
-const PANEL_W: float = 540.0
-const PANEL_H: float = 540.0
+const PANEL_W: float = 560.0
+const PANEL_H: float = 680.0
+const PLAYER_LIST_MAX_H: float = 260.0
 
 ## Player colours come from the ColorPalette singleton.
 
@@ -49,7 +50,7 @@ func _build_ui() -> void:
 
 	# Centred card panel — width driven by content, min PANEL_W
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(PANEL_W, 0)
+	panel.custom_minimum_size = Vector2(PANEL_W, PANEL_H)
 	panel.add_theme_stylebox_override("panel",
 		UITheme.make_panel_style(Vector4(28, 28, 24, 24), 8))
 	center.add_child(panel)
@@ -67,10 +68,17 @@ func _build_ui() -> void:
 
 	vbox.add_child(UITheme.make_separator())
 
-	# Player rows
+	# Player rows — inside a scroll container so large lobbies don't overflow
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, PLAYER_LIST_MAX_H)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(scroll)
+
 	_player_list = VBoxContainer.new()
 	_player_list.add_theme_constant_override("separation", 8)
-	vbox.add_child(_player_list)
+	_player_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_player_list)
 	_show_empty_state()
 
 	vbox.add_child(UITheme.make_separator())
