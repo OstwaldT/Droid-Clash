@@ -42,19 +42,17 @@ func _build_ui() -> void:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(dim)
 
-	# Centred card panel
+	# CenterContainer reliably centres its child regardless of content size
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.add_child(center)
+
+	# Centred card panel — width driven by content, min PANEL_W
 	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(PANEL_W, 0)
 	panel.add_theme_stylebox_override("panel",
 		UITheme.make_panel_style(Vector4(28, 28, 24, 24), 8))
-	panel.anchor_left   = 0.5
-	panel.anchor_top    = 0.5
-	panel.anchor_right  = 0.5
-	panel.anchor_bottom = 0.5
-	panel.offset_left   = -PANEL_W / 2.0
-	panel.offset_right  =  PANEL_W / 2.0
-	panel.offset_top    = -PANEL_H / 2.0
-	panel.offset_bottom =  PANEL_H / 2.0
-	root.add_child(panel)
+	center.add_child(panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 12)
@@ -81,7 +79,7 @@ func _build_ui() -> void:
 	# Footer count
 	_count_label = Label.new()
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UITheme.apply_font(_count_label, 15, UITheme.MUTED)
+	UITheme.apply_font(_count_label, 17, UITheme.MUTED)
 	vbox.add_child(_count_label)
 	_refresh_count()
 
@@ -109,7 +107,7 @@ func _build_map_size_row() -> HBoxContainer:
 
 	var lbl := UITheme.make_section_header("MAP SIZE")
 	lbl.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	lbl.custom_minimum_size.x = 82
+	lbl.custom_minimum_size.x = 100
 	lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(lbl)
 
@@ -118,7 +116,7 @@ func _build_map_size_row() -> HBoxContainer:
 		var btn := Button.new()
 		btn.text = "%s\n%d tiles · %sp" % [entry[0], entry[2], entry[3]]
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UITheme.apply_font(btn, 13)
+	UITheme.apply_font(btn, 15)
 		btn.set_meta("side_length", entry[1])
 		btn.pressed.connect(_on_map_size_pressed.bind(btn))
 		_map_size_buttons.append(btn)
@@ -178,14 +176,14 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	var num_label := Label.new()
 	num_label.text = "P%d" % player_id
 	num_label.custom_minimum_size.x = 30
-	UITheme.apply_font(num_label, 16, Color(0.55, 0.55, 0.65))
+	UITheme.apply_font(num_label, 18, Color(0.55, 0.55, 0.65))
 	row.add_child(num_label)
 
 	# Name
 	var name_label := Label.new()
 	name_label.text = player_name
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UITheme.apply_font(name_label, 18, UITheme.TEXT)
+	UITheme.apply_font(name_label, 20, UITheme.TEXT)
 	row.add_child(name_label)
 
 	# Ready status
@@ -194,7 +192,7 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	status.text = "○  WAITING"
 	status.custom_minimum_size.x = 110
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	UITheme.apply_font(status, 15, Color(0.40, 0.40, 0.52))
+	UITheme.apply_font(status, 17, Color(0.40, 0.40, 0.52))
 	row.add_child(status)
 
 	_player_list.add_child(row)
