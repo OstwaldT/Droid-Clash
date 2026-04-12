@@ -248,7 +248,20 @@ func _play_slam(visual: RobotVisual, event: Dictionary) -> void:
 	await get_tree().create_timer(SLAM_STEP - 0.25).timeout
 
 func _play_shockwave(visual: RobotVisual, event: Dictionary) -> void:
-	visual.pulse_shockwave()
+	# Compute world positions of the 6 surrounding hexes so the ring can flash them.
+	const HEX_OFFSETS: Array = [
+		Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1),
+		Vector2i(-1, 0), Vector2i(-1, 1), Vector2i(0, 1),
+	]
+	var neighbor_positions: Array[Vector3] = []
+	var pid: int = event.get("playerId", -1)
+	var robot: Robot = _game_manager.robots.get(pid)
+	if robot:
+		for off: Vector2i in HEX_OFFSETS:
+			var wp := _renderer.hex_to_world(robot.position.x + off.x, robot.position.y + off.y)
+			wp.y = HexGridRenderer.HEX_HEIGHT
+			neighbor_positions.append(wp)
+	visual.pulse_shockwave(neighbor_positions)
 	var pushes: Array = event.get("pushes", [])
 	# Slight delay so the ring expands before targets react
 	await get_tree().create_timer(0.15).timeout

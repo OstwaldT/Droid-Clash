@@ -441,40 +441,111 @@ func slam_ground_shake(hex_world_positions: Array) -> void:
 			get_tree().create_timer(0.30).timeout.connect(rock.queue_free)
 
 
-func pulse_shockwave() -> void:
+## Forcefield ring expanding to all 6 neighbor hexes.
+## neighbor_positions: Array of Vector3 world positions for the 6 surrounding hexes.
+func pulse_shockwave(neighbor_positions: Array = []) -> void:
 	if _is_dead:
 		return
-	# Subtle vertical bob
-	var origin_y := position.y
-	var tween := create_tween()
-	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "position:y", origin_y + 0.15, 0.10)
-	tween.tween_property(self, "position:y", origin_y, 0.15)
-	# Purple donut — thick ring, ground level, expands to readable size
-	var ring  := MeshInstance3D.new()
-	var rmesh := TorusMesh.new()
-	rmesh.inner_radius  = 0.28
-	rmesh.outer_radius  = 0.52
-	rmesh.ring_segments = 32
-	rmesh.rings         = 6
-	ring.mesh = rmesh
-	var rmat := StandardMaterial3D.new()
-	rmat.albedo_color               = Color(0.72, 0.18, 1.0, 0.92)
-	rmat.emission_enabled           = true
-	rmat.emission                   = Color(0.55, 0.05, 0.90)
-	rmat.emission_energy_multiplier = 3.5
-	rmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
-	ring.material_override = rmat
-	ring.position  = position + Vector3(0.0, 0.06, 0.0)
-	ring.rotation.x = PI / 2.0
-	ring.scale = Vector3(0.20, 0.20, 0.20)
-	get_parent().add_child(ring)
-	var rt := ring.create_tween()
-	rt.set_parallel(true)
-	rt.tween_property(ring, "scale",                       Vector3(3.2, 3.2, 0.5), 0.55)
-	rt.tween_property(rmat, "albedo_color:a",              0.0,                    0.60)
-	rt.tween_property(rmat, "emission_energy_multiplier",  0.0,                    0.50)
-	get_tree().create_timer(0.65).timeout.connect(ring.queue_free)
+	var origin := position
+	# Vertical bob
+	var bob := create_tween()
+	bob.set_ease(Tween.EASE_OUT)
+	bob.tween_property(self, "position:y", origin.y + 0.20, 0.10)
+	bob.tween_property(self, "position:y", origin.y, 0.18)
+
+	# --- Ground-level ring (primary wave) ---
+	# Neighbors are at HEX_SIZE*sqrt(3) ≈ 2.08 world units.
+	# outer_radius 0.45 × scale 5.2 = 2.34 → clearly reaches past neighbors.
+	var ring1 := MeshInstance3D.new()
+	var rmesh1 := TorusMesh.new()
+	rmesh1.inner_radius  = 0.22
+	rmesh1.outer_radius  = 0.45
+	rmesh1.ring_segments = 32
+	rmesh1.rings         = 6
+	ring1.mesh = rmesh1
+	var rmat1 := StandardMaterial3D.new()
+	rmat1.albedo_color               = Color(0.72, 0.18, 1.0, 0.95)
+	rmat1.emission_enabled           = true
+	rmat1.emission                   = Color(0.55, 0.05, 0.90)
+	rmat1.emission_energy_multiplier = 4.0
+	rmat1.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring1.material_override = rmat1
+	ring1.position  = origin + Vector3(0.0, 0.05, 0.0)
+	ring1.rotation.x = PI / 2.0
+	ring1.scale = Vector3(0.12, 0.12, 0.12)
+	get_parent().add_child(ring1)
+	var rt1 := ring1.create_tween()
+	rt1.set_parallel(true)
+	rt1.set_ease(Tween.EASE_OUT)
+	rt1.set_trans(Tween.TRANS_QUAD)
+	rt1.tween_property(ring1, "scale",                      Vector3(5.2, 5.2, 1.2), 0.52)
+	rt1.tween_property(rmat1, "albedo_color:a",             0.0,                    0.58)
+	rt1.tween_property(rmat1, "emission_energy_multiplier", 0.0,                    0.52)
+	get_tree().create_timer(0.65).timeout.connect(ring1.queue_free)
+
+	# --- Mid-height ring (forcefield wall depth) ---
+	var ring2 := MeshInstance3D.new()
+	var rmesh2 := TorusMesh.new()
+	rmesh2.inner_radius  = 0.18
+	rmesh2.outer_radius  = 0.38
+	rmesh2.ring_segments = 28
+	rmesh2.rings         = 4
+	ring2.mesh = rmesh2
+	var rmat2 := StandardMaterial3D.new()
+	rmat2.albedo_color               = Color(0.85, 0.40, 1.0, 0.75)
+	rmat2.emission_enabled           = true
+	rmat2.emission                   = Color(0.65, 0.15, 1.0)
+	rmat2.emission_energy_multiplier = 2.8
+	rmat2.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring2.material_override = rmat2
+	ring2.position  = origin + Vector3(0.0, 0.45, 0.0)
+	ring2.rotation.x = PI / 2.0
+	ring2.scale = Vector3(0.10, 0.10, 0.10)
+	get_parent().add_child(ring2)
+	var rt2 := ring2.create_tween()
+	rt2.tween_interval(0.06)
+	rt2.set_parallel(true)
+	rt2.set_ease(Tween.EASE_OUT)
+	rt2.set_trans(Tween.TRANS_QUAD)
+	rt2.tween_property(ring2, "scale",                      Vector3(5.0, 5.0, 1.0), 0.48)
+	rt2.tween_property(rmat2, "albedo_color:a",             0.0,                    0.50)
+	rt2.tween_property(rmat2, "emission_energy_multiplier", 0.0,                    0.46)
+	get_tree().create_timer(0.65).timeout.connect(ring2.queue_free)
+
+	# --- Impact flash at each neighbor hex (ring arrives ~0.30s in) ---
+	for wp: Vector3 in neighbor_positions:
+		var disc  := MeshInstance3D.new()
+		var dmesh := CylinderMesh.new()
+		dmesh.height        = 0.04
+		dmesh.top_radius    = 0.30
+		dmesh.bottom_radius = 0.30
+		disc.mesh = dmesh
+		var dmat := StandardMaterial3D.new()
+		dmat.albedo_color               = Color(0.85, 0.30, 1.0, 0.0)
+		dmat.emission_enabled           = true
+		dmat.emission                   = Color(0.65, 0.10, 0.95)
+		dmat.emission_energy_multiplier = 0.0
+		dmat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
+		disc.material_override = dmat
+		disc.position = Vector3(wp.x, 0.04, wp.z)
+		disc.scale    = Vector3(0.6, 1.0, 0.6)
+		get_parent().add_child(disc)
+		# Alpha: flash in then out
+		var fa := disc.create_tween()
+		fa.tween_interval(0.30)
+		fa.tween_property(dmat, "albedo_color:a", 0.90, 0.08)
+		fa.tween_property(dmat, "albedo_color:a", 0.0,  0.22)
+		# Emission: same timing
+		var fb := disc.create_tween()
+		fb.tween_interval(0.30)
+		fb.tween_property(dmat, "emission_energy_multiplier", 3.8, 0.08)
+		fb.tween_property(dmat, "emission_energy_multiplier", 0.0, 0.22)
+		# Scale: expand as it lands
+		var fc := disc.create_tween()
+		fc.tween_interval(0.30)
+		fc.tween_property(disc, "scale", Vector3(1.6, 1.0, 1.6), 0.14)
+		fc.tween_property(disc, "scale", Vector3(1.8, 1.0, 1.8), 0.16)
+		get_tree().create_timer(0.65).timeout.connect(disc.queue_free)
 
 func explode() -> void:
 	if _is_dead:
