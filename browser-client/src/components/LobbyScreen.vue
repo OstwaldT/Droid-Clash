@@ -1,6 +1,6 @@
 <template>
-  <div class="lobby-screen ui-screen flex flex-col items-center justify-center p-4 h-screen">
-    <div class="ui-panel p-8 w-full max-w-md relative overflow-hidden">
+  <div class="lobby-screen ui-screen flex flex-col items-center justify-start p-4 min-h-screen overflow-y-auto">
+    <div class="ui-panel p-8 w-full max-w-md relative overflow-hidden my-auto">
       <h1 class="text-center mb-8 text-[#f0c050] text-xl">DROID CLASH</h1>
 
       <!-- Countdown overlay -->
