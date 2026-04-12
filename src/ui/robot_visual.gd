@@ -8,6 +8,32 @@ class_name RobotVisual
 const FALL_SLIDE_DURATION: float = RobotVisualBase.MOVE_DURATION
 const FALL_DROP_DURATION: float = 0.70
 
+const DEBRIS_SIZE := Vector3(0.12, 0.12, 0.12)
+
+## Spawn a single cube debris piece that flies out and shrinks to nothing.
+func _spawn_cube_debris(origin: Vector3, color: Color, angle: float,
+		spread: float, peak: float, duration: float, emissive: bool = true) -> void:
+	var mi   := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = DEBRIS_SIZE
+	mi.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	if emissive:
+		mat.emission_enabled = true
+		mat.emission         = color
+	mi.material_override = mat
+	mi.position = origin
+	get_parent().add_child(mi)
+	var dest := origin + Vector3(sin(angle) * spread, peak, cos(angle) * spread)
+	var t    := mi.create_tween()
+	t.set_parallel(true)
+	t.set_ease(Tween.EASE_OUT)
+	t.set_trans(Tween.TRANS_QUAD)
+	t.tween_property(mi, "position", dest,         duration)
+	t.tween_property(mi, "scale",    Vector3.ZERO, duration * 0.9)
+	get_tree().create_timer(duration + 0.05).timeout.connect(mi.queue_free)
+
 func bump_blocked() -> void:
 	if _is_dead:
 		return
@@ -118,9 +144,8 @@ func fall_off(edge_pos: Vector3, slide_to_edge: bool = true) -> void:
 
 func shoot_rocket(target_world_pos: Vector3) -> void:
 	var rocket := MeshInstance3D.new()
-	var rmesh  := SphereMesh.new()
-	rmesh.radius = 0.16
-	rmesh.height = 0.32
+	var rmesh  := BoxMesh.new()
+	rmesh.size = Vector3(0.10, 0.10, 0.16)
 	rocket.mesh = rmesh
 	var rmat := StandardMaterial3D.new()
 	rmat.albedo_color               = Color(1.0, 0.65, 0.1)
@@ -137,56 +162,16 @@ func shoot_rocket(target_world_pos: Vector3) -> void:
 	fly.set_trans(Tween.TRANS_QUAD)
 	fly.tween_property(rocket, "position", dest, 0.35)
 	await fly.finished
-	for i in range(6):
-		var spark := MeshInstance3D.new()
-		var smesh := SphereMesh.new()
-		smesh.radius = randf_range(0.04, 0.10)
-		smesh.height = smesh.radius * 2.0
-		spark.mesh = smesh
-		var smat := StandardMaterial3D.new()
-		smat.albedo_color     = Color(1.0, randf_range(0.3, 0.7), 0.0)
-		smat.emission_enabled = true
-		smat.emission         = smat.albedo_color
-		spark.material_override = smat
-		spark.position = rocket.position
-		get_parent().add_child(spark)
-		var angle  := TAU * float(i) / 6.0 + randf_range(-0.3, 0.3)
-		var spread := randf_range(0.2, 0.55)
-		var peak   := randf_range(0.15, 0.50)
-		var spark_dest := spark.position + Vector3(sin(angle) * spread, peak, cos(angle) * spread)
-		var st := spark.create_tween()
-		st.set_parallel(true)
-		st.tween_property(spark, "position", spark_dest, 0.30)
-		st.tween_property(spark, "scale", Vector3.ZERO, 0.25)
-		get_tree().create_timer(0.35).timeout.connect(spark.queue_free)
 	rocket.queue_free()
 
 ## Orange burst explosion when a rocket hits a wall tile.
 func rocket_wall_hit(wall_world: Vector3) -> void:
-	var burst_pos := wall_world
-	for i in range(8):
-		var spark := MeshInstance3D.new()
-		var smesh := SphereMesh.new()
-		smesh.radius = randf_range(0.06, 0.14)
-		smesh.height = smesh.radius * 2.0
-		spark.mesh = smesh
-		var smat := StandardMaterial3D.new()
-		smat.albedo_color               = Color(1.0, randf_range(0.2, 0.7), 0.0)
-		smat.emission_enabled           = true
-		smat.emission                   = smat.albedo_color
-		smat.emission_energy_multiplier = 4.0
-		spark.material_override = smat
-		spark.position = burst_pos
-		get_parent().add_child(spark)
-		var angle  := TAU * float(i) / 8.0 + randf_range(-0.3, 0.3)
+	for i in range(10):
+		var angle  := TAU * float(i) / 10.0 + randf_range(-0.3, 0.3)
 		var spread := randf_range(0.25, 0.60)
 		var peak   := randf_range(0.10, 0.45)
-		var dest   := burst_pos + Vector3(sin(angle) * spread, peak, cos(angle) * spread)
-		var st := spark.create_tween()
-		st.set_parallel(true)
-		st.tween_property(spark, "position", dest,         0.35)
-		st.tween_property(spark, "scale",    Vector3.ZERO, 0.30)
-		get_tree().create_timer(0.40).timeout.connect(spark.queue_free)
+		_spawn_cube_debris(wall_world, Color(1.0, randf_range(0.2, 0.7), 0.0),
+				angle, spread, peak, 0.35)
 
 ## Disorient: spinning purple orb flies toward target hex.
 func shoot_disorient(target_world_pos: Vector3) -> void:
@@ -218,31 +203,12 @@ func shoot_disorient(target_world_pos: Vector3) -> void:
 
 ## Purple burst explosion when a disorient pulse hits a wall tile.
 func disorient_wall_hit(wall_world: Vector3) -> void:
-	var burst_pos := wall_world
 	for i in range(6):
-		var spark := MeshInstance3D.new()
-		var smesh := SphereMesh.new()
-		smesh.radius = randf_range(0.05, 0.12)
-		smesh.height = smesh.radius * 2.0
-		spark.mesh = smesh
-		var smat := StandardMaterial3D.new()
-		smat.albedo_color               = Color(0.72, randf_range(0.05, 0.35), 1.0, 0.90)
-		smat.emission_enabled           = true
-		smat.emission                   = Color(0.50, 0.05, 0.90)
-		smat.emission_energy_multiplier = 3.5
-		smat.transparency               = BaseMaterial3D.TRANSPARENCY_ALPHA
-		spark.material_override = smat
-		spark.position = burst_pos
-		get_parent().add_child(spark)
 		var angle  := TAU * float(i) / 6.0 + randf_range(-0.3, 0.3)
 		var spread := randf_range(0.20, 0.55)
 		var peak   := randf_range(0.10, 0.40)
-		var dest   := burst_pos + Vector3(sin(angle) * spread, peak, cos(angle) * spread)
-		var st := spark.create_tween()
-		st.set_parallel(true)
-		st.tween_property(spark, "position", dest,         0.30)
-		st.tween_property(spark, "scale",    Vector3.ZERO, 0.25)
-		get_tree().create_timer(0.35).timeout.connect(spark.queue_free)
+		_spawn_cube_debris(wall_world, Color(0.72, randf_range(0.05, 0.35), 1.0),
+				angle, spread, peak, 0.30)
 
 ## Disorient hit: dizzy orbiting sparks around the robot's head.
 func disorient_wobble() -> void:
@@ -257,12 +223,11 @@ func disorient_wobble() -> void:
 	tween.tween_property(self, "rotation:y", origin_y - 0.40, 0.10)
 	tween.tween_property(self, "rotation:y", origin_y + 0.20, 0.08)
 	tween.tween_property(self, "rotation:y", origin_y,        0.07)
-	# Four dizzy sparks orbiting the head
+	# Four dizzy cube-stars orbiting the head
 	for i in range(4):
 		var star  := MeshInstance3D.new()
-		var smesh := SphereMesh.new()
-		smesh.radius = 0.06
-		smesh.height = 0.12
+		var smesh := BoxMesh.new()
+		smesh.size = Vector3(0.08, 0.08, 0.08)
 		star.mesh = smesh
 		var smat := StandardMaterial3D.new()
 		smat.albedo_color               = Color(0.72, 0.18, 1.0, 0.90)
@@ -515,10 +480,10 @@ func explode() -> void:
 	if _is_dead:
 		return
 	_is_dead = true
-	for i in range(8):
+	for i in range(10):
 		var debris := MeshInstance3D.new()
 		var dmesh  := BoxMesh.new()
-		dmesh.size = Vector3(randf_range(0.07, 0.17), randf_range(0.07, 0.17), randf_range(0.07, 0.17))
+		dmesh.size = DEBRIS_SIZE
 		debris.mesh = dmesh
 		var dmat := StandardMaterial3D.new()
 		dmat.albedo_color     = Color(randf_range(0.8, 1.0), randf_range(0.1, 0.55), 0.0)
@@ -527,7 +492,7 @@ func explode() -> void:
 		debris.material_override = dmat
 		debris.position = position + Vector3(0.0, 0.25, 0.0)
 		get_parent().add_child(debris)
-		var angle  := TAU * float(i) / 8.0 + randf_range(-0.4, 0.4)
+		var angle  := TAU * float(i) / 10.0 + randf_range(-0.4, 0.4)
 		var radius := randf_range(0.7, 1.5)
 		var peak_y := randf_range(0.3, 0.9)
 		var dest := debris.position + Vector3(sin(angle) * radius, peak_y, cos(angle) * radius)
