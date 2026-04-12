@@ -16,7 +16,7 @@ board game. Every element should look like it was built from cubes.
 | 2 | Hex tiles | ✅ Done | Flat-matte, warm earthy palette, no glow ring |
 | 3 | Wall obstacles | ✅ Done | 3-box voxel tower, warm gold cap |
 | 4 | Effects | ✅ Done | Cube projectile, uniform debris |
-| 5 | Browser UI | Pending | Pixel font, flat card icons |
+| 5 | Browser UI | ✅ Done | Pixel font, flat card icons |
 
 ---
 
