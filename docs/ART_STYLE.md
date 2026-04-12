@@ -13,8 +13,8 @@ board game. Every element should look like it was built from cubes.
 | # | Area | Status | Notes |
 |---|------|--------|-------|
 | 1 | Robot models | ✅ Done | Procedural BoxMesh droid; no external assets |
-| 2 | Hex tiles | Pending | Flat-matte, warm palette, no glow ring |
-| 3 | Wall obstacles | Pending | BoxMesh tower stack replaces scifi GLTF |
+| 2 | Hex tiles | ✅ Done | Flat-matte, warm earthy palette, no glow ring |
+| 3 | Wall obstacles | ✅ Done | 3-box voxel tower, warm gold cap |
 | 4 | Effects | Pending | Cube projectile, uniform debris |
 | 5 | Browser UI | Pending | Pixel font, flat card icons |
 
