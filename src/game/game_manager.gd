@@ -35,9 +35,19 @@ func _init() -> void:
 func add_player(player_id: int, player_name: String) -> bool:
 	if players.size() >= max_players:
 		return false
-	
-	# Assign a distinct color by slot index (before the player is added)
-	var color: String = ColorPalette.hex_for(players.size())
+
+	# Pick the first palette slot not already in use by a current player.
+	var used_colors: Array = []
+	for p in players.values():
+		used_colors.append(p["color"])
+	var color: String = ""
+	for slot in range(ColorPalette.PLAYER_COLORS_HEX.size()):
+		var candidate: String = ColorPalette.hex_for(slot)
+		if candidate not in used_colors:
+			color = candidate
+			break
+	if color.is_empty():
+		color = ColorPalette.hex_for(players.size())  # fallback: wrap around
 
 	players[player_id] = {
 		"name": player_name,
