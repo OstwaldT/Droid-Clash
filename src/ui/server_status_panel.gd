@@ -17,21 +17,21 @@ func _ready() -> void:
 
 	var panel = PanelContainer.new()
 	panel.add_theme_stylebox_override("panel",
-		UITheme.make_panel_style(Vector4(10, 10, 10, 10), 6))
+		UITheme.make_panel_style(Vector4(15, 15, 15, 15), 6))
 
 	status_label = RichTextLabel.new()
 	status_label.bbcode_enabled = true
 	status_label.fit_content = true
 	status_label.scroll_active = false
-	UITheme.apply_font(status_label, 16)
+	UITheme.apply_font(status_label, 24)
 	status_label.add_theme_color_override("default_color", UITheme.TEXT)
 	panel.add_child(status_label)
 
 	# Position top-left
 	panel.anchor_left = 0
 	panel.anchor_top = 0
-	panel.offset_right = 400
-	panel.offset_bottom = 300
+	panel.offset_right = 600
+	panel.offset_bottom = 450
 
 	add_child(panel)
 	set_process(true)

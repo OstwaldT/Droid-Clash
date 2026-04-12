@@ -26,7 +26,7 @@ const DANGER    := Color(0.66, 0.29, 0.39)   # #a84b63  — .ui-section--danger
 
 ## Standard panel background: square corners, 2px border, drop shadow.
 static func make_panel_style(
-	margins: Vector4 = Vector4(12, 12, 12, 12),
+	margins: Vector4 = Vector4(18, 18, 18, 18),
 	shadow_sz: int = 8,
 	border_col: Color = BORDER
 ) -> StyleBoxFlat:
@@ -57,10 +57,10 @@ static func make_button_style(bg: Color = BTN_BG, border: Color = BORDER) -> Sty
 	s.border_width_top    = 2
 	s.border_width_bottom = 2
 	s.border_color = border
-	s.content_margin_left   = 8
-	s.content_margin_right  = 8
-	s.content_margin_top    = 6
-	s.content_margin_bottom = 6
+	s.content_margin_left   = 12
+	s.content_margin_right  = 12
+	s.content_margin_top    = 9
+	s.content_margin_bottom = 9
 	return s
 
 
@@ -95,11 +95,11 @@ static func make_separator(opacity: float = 0.6) -> HSeparator:
 static func make_section_header(text: String) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
-	apply_font(lbl, 13, MUTED)
+	apply_font(lbl, 20, MUTED)
 	return lbl
 
 ## Large centred title (e.g. "DROID-CLASH", ">> GAME OVER <<").
-static func make_title(text: String, size: int = 42, color: Color = HIGHLIGHT) -> Label:
+static func make_title(text: String, size: int = 63, color: Color = HIGHLIGHT) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -107,7 +107,7 @@ static func make_title(text: String, size: int = 42, color: Color = HIGHLIGHT) -
 	return lbl
 
 ## Centred subtitle (e.g. "L  O  B  B  Y").
-static func make_subtitle(text: String, size: int = 14) -> Label:
+static func make_subtitle(text: String, size: int = 21) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -115,7 +115,7 @@ static func make_subtitle(text: String, size: int = 14) -> Label:
 	return lbl
 
 ## Small square color swatch used in player rows.
-static func make_swatch(color: Color, size: float = 12.0) -> ColorRect:
+static func make_swatch(color: Color, size: float = 18.0) -> ColorRect:
 	var rect := ColorRect.new()
 	rect.color = color
 	rect.custom_minimum_size = Vector2(size, size)
