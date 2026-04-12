@@ -6,9 +6,9 @@ class_name PlayerStatusHUD
 ## Anchored to the top-right corner.
 ## Statuses:  "..  Selecting"  |  ">  Submitted"  |  ">> Acting"
 
-const PANEL_W: float  = 420.0
-const ROW_H:   float  = 72.0
-const PADDING: float  = 18.0
+const PANEL_W: float  = 360.0
+const ROW_H:   float  = 60.0
+const PADDING: float  = 15.0
 
 # Status colors
 const COLOR_SELECTING := Color(0.50, 0.50, 0.62)
@@ -65,13 +65,13 @@ func _build_ui() -> void:
 	# Section header — slightly smaller than the default factory produces
 	var header := Label.new()
 	header.text = "PLAYERS"
-	UITheme.apply_font(header, 18, UITheme.MUTED)
+	UITheme.apply_font(header, 16, UITheme.MUTED)
 	vbox.add_child(header)
 
 	vbox.add_child(UITheme.make_separator(0.70))
 
 	_player_list = VBoxContainer.new()
-	_player_list.add_theme_constant_override("separation", 9)
+	_player_list.add_theme_constant_override("separation", 8)
 	vbox.add_child(_player_list)
 
 # --- Row management ---
@@ -87,7 +87,7 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 
 	# ── Outer row ──────────────────────────────────────────────────────
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
+	row.add_theme_constant_override("separation", 9)
 	row.custom_minimum_size.y = ROW_H
 
 	row.add_child(UITheme.make_swatch(color, 15.0))
@@ -102,7 +102,7 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	var name_lbl := Label.new()
 	name_lbl.text = player_name
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UITheme.apply_font(name_lbl, 24, UITheme.TEXT)
+	UITheme.apply_font(name_lbl, 20, UITheme.TEXT)
 	name_lbl.clip_text = true
 	centre.add_child(name_lbl)
 
@@ -114,7 +114,7 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 	# Custom bar: Control containing bg + fill ColorRects
 	var bar_bg := Control.new()
 	bar_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bar_bg.custom_minimum_size   = Vector2(0, 11)
+	bar_bg.custom_minimum_size   = Vector2(0, 9)
 	bar_bg.clip_contents         = true
 	hp_row.add_child(bar_bg)
 
@@ -138,18 +138,18 @@ func _add_player_row(player_id: int, player_name: String) -> void:
 
 	var hp_lbl := Label.new()
 	hp_lbl.text = "%d" % (robot.health if robot else 100)
-	hp_lbl.custom_minimum_size.x = 42
+	hp_lbl.custom_minimum_size.x = 36
 	hp_lbl.horizontal_alignment  = HORIZONTAL_ALIGNMENT_RIGHT
-	UITheme.apply_font(hp_lbl, 20, Color(0.75, 0.75, 0.75))
+	UITheme.apply_font(hp_lbl, 17, Color(0.75, 0.75, 0.75))
 	hp_row.add_child(hp_lbl)
 
 	# ── Status badge ───────────────────────────────────────────────────
 	var status_lbl := Label.new()
 	status_lbl.text = "..  Selecting"
-	status_lbl.custom_minimum_size.x = 162
+	status_lbl.custom_minimum_size.x = 180
 	status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	status_lbl.size_flags_vertical  = Control.SIZE_SHRINK_CENTER
-	UITheme.apply_font(status_lbl, 23, COLOR_SELECTING)
+	UITheme.apply_font(status_lbl, 19, COLOR_SELECTING)
 	row.add_child(status_lbl)
 
 	_player_list.add_child(row)

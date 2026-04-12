@@ -95,11 +95,11 @@ static func make_separator(opacity: float = 0.6) -> HSeparator:
 static func make_section_header(text: String) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
-	apply_font(lbl, 20, MUTED)
+	apply_font(lbl, 18, MUTED)
 	return lbl
 
 ## Large centred title (e.g. "DROID-CLASH", ">> GAME OVER <<").
-static func make_title(text: String, size: int = 63, color: Color = HIGHLIGHT) -> Label:
+static func make_title(text: String, size: int = 54, color: Color = HIGHLIGHT) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -107,7 +107,7 @@ static func make_title(text: String, size: int = 63, color: Color = HIGHLIGHT) -
 	return lbl
 
 ## Centred subtitle (e.g. "L  O  B  B  Y").
-static func make_subtitle(text: String, size: int = 21) -> Label:
+static func make_subtitle(text: String, size: int = 18) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -115,7 +115,7 @@ static func make_subtitle(text: String, size: int = 21) -> Label:
 	return lbl
 
 ## Small square color swatch used in player rows.
-static func make_swatch(color: Color, size: float = 18.0) -> ColorRect:
+static func make_swatch(color: Color, size: float = 15.0) -> ColorRect:
 	var rect := ColorRect.new()
 	rect.color = color
 	rect.custom_minimum_size = Vector2(size, size)

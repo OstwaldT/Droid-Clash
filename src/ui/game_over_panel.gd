@@ -5,8 +5,8 @@ class_name GameOverPanel
 ## Full-screen overlay shown on the 3D board when the game ends.
 ## Displays the winner (highlighted in their color) and final health standings.
 
-const PANEL_W: float = 780.0
-const PANEL_H: float = 720.0
+const PANEL_W: float = 660.0
+const PANEL_H: float = 660.0
 
 var game_manager: GameManager
 
@@ -40,7 +40,7 @@ func _build_ui() -> void:
 	# Centred panel — gold border for emphasis
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel",
-		UITheme.make_panel_style(Vector4(48, 48, 42, 42), 8, UITheme.HIGHLIGHT))
+		UITheme.make_panel_style(Vector4(36, 36, 30, 30), 8, UITheme.HIGHLIGHT))
 	panel.anchor_left   = 0.5
 	panel.anchor_top    = 0.5
 	panel.anchor_right  = 0.5
@@ -52,17 +52,17 @@ func _build_ui() -> void:
 	root.add_child(panel)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 21)
+	vbox.add_theme_constant_override("separation", 18)
 	panel.add_child(vbox)
 
-	vbox.add_child(UITheme.make_title(">> GAME OVER <<", 60))
+	vbox.add_child(UITheme.make_title(">> GAME OVER <<", 51))
 	vbox.add_child(UITheme.make_subtitle("R  E  S  U  L  T  S"))
 	vbox.add_child(UITheme.make_separator(0.50))
 
 	# Winner block (populated dynamically)
 	_winner_label = Label.new()
 	_winner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UITheme.apply_font(_winner_label, 48, UITheme.TEXT)
+	UITheme.apply_font(_winner_label, 42, UITheme.TEXT)
 	_winner_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(_winner_label)
 
@@ -70,7 +70,7 @@ func _build_ui() -> void:
 	vbox.add_child(UITheme.make_section_header("FINAL STANDINGS"))
 
 	_result_list = VBoxContainer.new()
-	_result_list.add_theme_constant_override("separation", 9)
+	_result_list.add_theme_constant_override("separation", 8)
 	vbox.add_child(_result_list)
 
 # --- Populate on game end ---
@@ -122,8 +122,8 @@ func show_result() -> void:
 ## Returns [HBoxContainer, rematch_icon_label] so the caller can store the icon reference.
 func _make_result_row(robot: Robot, is_winner: bool) -> Array:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 15)
-	row.custom_minimum_size.y = 54.0
+	row.add_theme_constant_override("separation", 12)
+	row.custom_minimum_size.y = 45.0
 
 	var robot_color := Color.html(robot.color) if not robot.color.is_empty() else UITheme.TEXT
 
@@ -139,14 +139,14 @@ func _make_result_row(robot: Robot, is_winner: bool) -> Array:
 		icon_lbl.add_theme_color_override("font_color", UITheme.DANGER)
 	else:
 		icon_lbl.text = "   "
-	UITheme.apply_font(icon_lbl, 27)
+	UITheme.apply_font(icon_lbl, 22)
 	row.add_child(icon_lbl)
 
 	# Name
 	var name_lbl := Label.new()
 	name_lbl.text = robot.bot_name
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UITheme.apply_font(name_lbl, 27)
+	UITheme.apply_font(name_lbl, 22)
 	name_lbl.add_theme_color_override("font_color",
 		robot_color if robot.is_alive() else Color(0.45, 0.45, 0.45))
 	row.add_child(name_lbl)
@@ -154,9 +154,9 @@ func _make_result_row(robot: Robot, is_winner: bool) -> Array:
 	# HP readout
 	var hp_lbl := Label.new()
 	hp_lbl.text = "%d / %d HP" % [robot.health, robot.max_health]
-	hp_lbl.custom_minimum_size.x = 150
+	hp_lbl.custom_minimum_size.x = 126
 	hp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	UITheme.apply_font(hp_lbl, 26)
+	UITheme.apply_font(hp_lbl, 22)
 	hp_lbl.add_theme_color_override("font_color",
 		UITheme.SUCCESS if robot.is_alive() else UITheme.DANGER)
 	row.add_child(hp_lbl)
@@ -164,9 +164,9 @@ func _make_result_row(robot: Robot, is_winner: bool) -> Array:
 	# Rematch indicator — empty until the player opts in
 	var rematch_lbl := Label.new()
 	rematch_lbl.text = ""
-	rematch_lbl.custom_minimum_size.x = 42
+	rematch_lbl.custom_minimum_size.x = 36
 	rematch_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UITheme.apply_font(rematch_lbl, 27)
+	UITheme.apply_font(rematch_lbl, 22)
 	row.add_child(rematch_lbl)
 
 	return [row, rematch_lbl]
